@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 
 export default function Home() {
   const [data, setData] = useState<any[]>([]);
+  const [year, setYear] = useState(2026);
 
   const handleFile = (e: any) => {
     const file = e.target.files[0];
@@ -22,13 +23,14 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  const startDate = new Date();
+  // 📊 старт расчёта (год сценария)
+  const startDate = new Date(year, 0, 1);
 
-  // 📊 ФОТ на год вперед
-  const monthlyFot = Array.from({ length: 12 }, (_, monthIndex) => {
+  // 📈 прогноз ФОТ на 12 месяцев
+  const monthlyFot = Array.from({ length: 12 }, (_, i) => {
     const monthDate = new Date(
       startDate.getFullYear(),
-      startDate.getMonth() + monthIndex,
+      startDate.getMonth() + i,
       1
     );
 
@@ -37,7 +39,6 @@ export default function Home() {
 
       if (!row.salary || isNaN(hireDate.getTime())) return sum;
 
-      // если сотрудник уже нанят к этому месяцу
       if (hireDate <= monthDate) {
         return sum + Number(row.salary);
       }
@@ -46,7 +47,10 @@ export default function Home() {
     }, 0);
 
     return {
-      month: monthDate.toLocaleString("ru-RU", { month: "long", year: "numeric" }),
+      month: monthDate.toLocaleString("ru-RU", {
+        month: "long",
+        year: "numeric",
+      }),
       fot: total,
     };
   });
@@ -55,13 +59,53 @@ export default function Home() {
     <main style={{ padding: 50, fontFamily: "Arial" }}>
       <h1>FOTcast</h1>
 
-      <h2>Прогноз фонда оплаты труда на 12 месяцев</h2>
+      <h2>Прогноз фонда оплаты труда</h2>
 
+      {/* 📂 загрузка файла */}
       <input type="file" accept=".xlsx,.xls" onChange={handleFile} />
 
-      {monthlyFot.length > 0 && data.length > 0 && (
+      {/* 📅 выбор года */}
+      <div style={{ marginTop: 20 }}>
+        <label>Год расчёта: </label>
+
+        <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
+          <option value={2025}>2025</option>
+          <option value={2026}>2026</option>
+          <option value={2027}>2027</option>
+        </select>
+      </div>
+
+      {/* 📋 таблица сотрудников */}
+      {data.length > 0 && (
         <div style={{ marginTop: 30 }}>
-          <h3>📈 Прогноз</h3>
+          <h3>📋 Сотрудники</h3>
+
+          <table border={1} cellPadding={8} style={{ borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th>Имя</th>
+                <th>Зарплата</th>
+                <th>Дата найма</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {data.map((row, i) => (
+                <tr key={i}>
+                  <td>{row.name}</td>
+                  <td>{Number(row.salary).toLocaleString()} ₽</td>
+                  <td>{row.hire_date}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* 📈 прогноз */}
+      {data.length > 0 && (
+        <div style={{ marginTop: 40 }}>
+          <h3>📈 Прогноз ФОТ</h3>
 
           {monthlyFot.map((m, i) => (
             <p key={i}>
