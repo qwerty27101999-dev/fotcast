@@ -1,17 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 
 export default function Home() {
   const [data, setData] = useState<any[]>([]);
   const [year, setYear] = useState(2026);
 
-  // 📌 Excel дата → нормальная JS дата
   const parseExcelDate = (value: any) => {
     if (!value) return null;
 
-    // Excel serial number (46266 и т.п.)
     if (typeof value === "number") {
       return new Date((value - 25569) * 86400 * 1000);
     }
@@ -20,7 +18,6 @@ export default function Home() {
     return isNaN(date.getTime()) ? null : date;
   };
 
-  // 📂 загрузка Excel
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -37,47 +34,44 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // 📅 старт сценария
-  const startDate = new Date(year, 0, 1);
+  const months = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) =>
+      new Date(year, i, 1)
+    );
+  }, [year]);
 
-  // 📊 ФОТ прогноз
-  const monthlyFot = Array.from({ length: 12 }, (_, i) => {
-    const monthDate = new Date(year, i, 1);
-
-    const total = data.reduce((sum, row) => {
+  const employeeRows = useMemo(() => {
+    return data.map((row) => {
       const hireDate = parseExcelDate(row.hire_date);
+      const salary = Number(row.salary || 0);
 
-      if (!hireDate || isNaN(hireDate.getTime())) return sum;
+      const monthly = months.map((m) => {
+        if (!hireDate || hireDate > m) return 0;
+        return salary;
+      });
 
-      // сотрудник учитывается только после найма
-      if (hireDate.getTime() <= monthDate.getTime()) {
-        return sum + Number(row.salary || 0);
-      }
+      const yearlyTotal = monthly.reduce((a, b) => a + b, 0);
 
-      return sum;
-    }, 0);
-
-    return {
-      month: monthDate.toLocaleString("ru-RU", {
-        month: "long",
-        year: "numeric",
-      }),
-      fot: total,
-    };
-  });
+      return {
+        name: row.name,
+        hireDate,
+        salary,
+        monthly,
+        yearlyTotal,
+      };
+    });
+  }, [data, months]);
 
   return (
-    <main style={{ padding: 50, fontFamily: "Arial" }}>
+    <main style={{ padding: 40, fontFamily: "Arial" }}>
       <h1>FOTcast</h1>
 
-      <h2>Прогноз фонда оплаты труда</h2>
+      <h2>Payroll Matrix (годовая модель)</h2>
 
-      {/* загрузка */}
       <input type="file" accept=".xlsx,.xls" onChange={handleFile} />
 
-      {/* выбор года */}
       <div style={{ marginTop: 20 }}>
-        <label>Год расчёта: </label>
+        <label>Год: </label>
 
         <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
           <option value={2025}>2025</option>
@@ -86,52 +80,52 @@ export default function Home() {
         </select>
       </div>
 
-      {/* таблица */}
       {data.length > 0 && (
-        <div style={{ marginTop: 30 }}>
-          <h3>📋 Сотрудники</h3>
+        <table
+          border={1}
+          cellPadding={6}
+          style={{ marginTop: 30, borderCollapse: "collapse" }}
+        >
+          <thead>
+            <tr>
+              <th>ФИО</th>
+              <th>Дата найма</th>
+              <th>Оклад</th>
 
-          <table border={1} cellPadding={8} style={{ borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th>Имя</th>
-                <th>Зарплата</th>
-                <th>Дата найма</th>
+              {months.map((m, i) => (
+                <th key={i}>
+                  {m.toLocaleString("ru-RU", { month: "short" })}
+                </th>
+              ))}
+
+              <th>Год</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {employeeRows.map((e, i) => (
+              <tr key={i}>
+                <td>{e.name}</td>
+
+                <td>
+                  {e.hireDate
+                    ? e.hireDate.toLocaleDateString("ru-RU")
+                    : "—"}
+                </td>
+
+                <td>{e.salary.toLocaleString()} ₽</td>
+
+                {e.monthly.map((v: number, j: number) => (
+                  <td key={j}>{v.toLocaleString()}</td>
+                ))}
+
+                <td>
+                  <b>{e.yearlyTotal.toLocaleString()} ₽</b>
+                </td>
               </tr>
-            </thead>
-
-            <tbody>
-              {data.map((row, i) => {
-                const parsedDate = parseExcelDate(row.hire_date);
-
-                return (
-                  <tr key={i}>
-                    <td>{row.name}</td>
-                    <td>{Number(row.salary).toLocaleString()} ₽</td>
-                    <td>
-                      {parsedDate
-                        ? parsedDate.toLocaleDateString("ru-RU")
-                        : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* прогноз */}
-      {data.length > 0 && (
-        <div style={{ marginTop: 40 }}>
-          <h3>📈 Прогноз ФОТ</h3>
-
-          {monthlyFot.map((m, i) => (
-            <p key={i}>
-              {m.month}: <b>{m.fot.toLocaleString()} ₽</b>
-            </p>
-          ))}
-        </div>
+            ))}
+          </tbody>
+        </table>
       )}
     </main>
   );
