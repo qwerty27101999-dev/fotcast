@@ -8,7 +8,7 @@ export default function Home() {
   const [year, setYear] = useState(2026);
   const [tab, setTab] = useState<"fot" | "headcount">("fot");
 
-  // 📌 Excel date parser
+  // 📌 Excel date fix
   const parseExcelDate = (value: any) => {
     if (!value) return null;
 
@@ -16,11 +16,10 @@ export default function Home() {
       return new Date((value - 25569) * 86400 * 1000);
     }
 
-    const date = new Date(value);
-    return isNaN(date.getTime()) ? null : date;
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? null : d;
   };
 
-  // 📂 upload
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -40,12 +39,19 @@ export default function Home() {
     return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
   }, [year]);
 
-  // 💰 payroll + department
+  // 🧠 normalize departments (ВАЖНО FIX)
+  const departments = useMemo(() => {
+    return Array.from(
+      new Set(data.map((d) => (d.department || "—").trim()))
+    );
+  }, [data]);
+
+  // 💰 employees + fot
   const employeeRows = useMemo(() => {
     return data.map((row) => {
       const hireDate = parseExcelDate(row.hire_date);
       const salary = Number(row.salary || 0);
-      const department = row.department || "—";
+      const department = (row.department || "—").trim();
 
       const monthly = months.map((m) => {
         if (!hireDate) return 0;
@@ -73,28 +79,25 @@ export default function Home() {
     });
   }, [data, months]);
 
-  // 👥 headcount grouped by department
-  const headcountByDeptMonth = useMemo(() => {
-    const depts = Array.from(
-      new Set(data.map((d) => d.department || "—"))
-    );
-
-    return depts.map((dept) => {
+  // 👥 headcount FIXED (stable matrix)
+  const headcountMatrix = useMemo(() => {
+    return departments.map((dept) => {
       const row: any = { dept };
 
       months.forEach((m, i) => {
-        const end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+        const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
 
         row[i] = data.filter((r) => {
-          if ((r.department || "—") !== dept) return false;
           const d = parseExcelDate(r.hire_date);
-          return d && d <= end;
+          const dep = (r.department || "—").trim();
+
+          return dep === dept && d && d <= monthEnd;
         }).length;
       });
 
       return row;
     });
-  }, [data, months]);
+  }, [data, months, departments]);
 
   return (
     <main style={{ padding: 40, fontFamily: "Arial" }}>
@@ -121,7 +124,7 @@ export default function Home() {
         </button>
       </div>
 
-      {/* FOT TAB */}
+      {/* FOT */}
       {tab === "fot" && (
         <table border={1} cellPadding={6} style={{ marginTop: 30 }}>
           <thead>
@@ -142,8 +145,7 @@ export default function Home() {
           <tbody>
             {employeeRows.map((e, i) => (
               <tr key={i}>
-                <td>{e.name}</td>
-                <td>{e.department}</td>
+                <td>{e.name}</td><td>{e.department}</td>
                 <td>{e.hireDate?.toLocaleDateString("ru-RU") || "—"}</td>
                 <td>{e.salary}</td>
 
@@ -158,7 +160,7 @@ export default function Home() {
         </table>
       )}
 
-      {/* HEADCOUNT TAB (TRANSPOSED) */}
+      {/* HEADCOUNT FIXED */}
       {tab === "headcount" && (
         <div style={{ marginTop: 30 }}>
           <h3>Численность по подразделениям</h3>
@@ -176,12 +178,12 @@ export default function Home() {
             </thead>
 
             <tbody>
-              {headcountByDeptMonth.map((r, i) => (
+              {headcountMatrix.map((r, i) => (
                 <tr key={i}>
                   <td><b>{r.dept}</b></td>
 
                   {months.map((_, j) => (
-                    <td key={j}>{r[j] || 0}</td>
+                    <td key={j}>{r[j] ?? 0}</td>
                   ))}
                 </tr>
               ))}
