@@ -7,6 +7,20 @@ export default function Home() {
   const [data, setData] = useState<any[]>([]);
   const [year, setYear] = useState(2026);
 
+  // 📌 Excel дата → нормальная JS дата
+  const parseExcelDate = (value: any) => {
+    if (!value) return null;
+
+    // Excel serial number (46266 и т.п.)
+    if (typeof value === "number") {
+      return new Date((value - 25569) * 86400 * 1000);
+    }
+
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // 📂 загрузка Excel
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -23,23 +37,10 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // 📌 конвертация Excel даты (ВАЖНО)
-  const parseExcelDate = (value: any) => {
-    if (!value) return null;
-
-    // Excel serial number (например 46266)
-    if (typeof value === "number") {
-      return new Date((value - 25569) * 86400 * 1000);
-    }
-
-    const date = new Date(value);
-    return isNaN(date.getTime()) ? null : date;
-  };
-
-  // 📅 старт расчёта
+  // 📅 старт сценария
   const startDate = new Date(year, 0, 1);
 
-  // 📊 прогноз ФОТ
+  // 📊 ФОТ прогноз
   const monthlyFot = Array.from({ length: 12 }, (_, i) => {
     const monthDate = new Date(year, i, 1);
 
@@ -100,13 +101,21 @@ export default function Home() {
             </thead>
 
             <tbody>
-              {data.map((row, i) => (
-                <tr key={i}>
-                  <td>{row.name}</td>
-                  <td>{Number(row.salary).toLocaleString()} ₽</td>
-                  <td>{String(row.hire_date)}</td>
-                </tr>
-              ))}
+              {data.map((row, i) => {
+                const parsedDate = parseExcelDate(row.hire_date);
+
+                return (
+                  <tr key={i}>
+                    <td>{row.name}</td>
+                    <td>{Number(row.salary).toLocaleString()} ₽</td>
+                    <td>
+                      {parsedDate
+                        ? parsedDate.toLocaleDateString("ru-RU")
+                        : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
