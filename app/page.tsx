@@ -7,6 +7,7 @@ export default function Home() {
   const [data, setData] = useState<any[]>([]);
   const [year, setYear] = useState(2026);
 
+  // 📌 Excel date → JS date
   const parseExcelDate = (value: any) => {
     if (!value) return null;
 
@@ -18,6 +19,7 @@ export default function Home() {
     return isNaN(date.getTime()) ? null : date;
   };
 
+  // 📂 upload Excel
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -34,20 +36,36 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
+  // 📅 months of selected year
   const months = useMemo(() => {
-    return Array.from({ length: 12 }, (_, i) =>
-      new Date(year, i, 1)
-    );
+    return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
   }, [year]);
 
+  // 📊 employees matrix with prorated salary
   const employeeRows = useMemo(() => {
     return data.map((row) => {
       const hireDate = parseExcelDate(row.hire_date);
       const salary = Number(row.salary || 0);
 
       const monthly = months.map((m) => {
-        if (!hireDate || hireDate > m) return 0;
-        return salary;
+        if (!hireDate) return 0;
+
+        const monthStart = new Date(m.getFullYear(), m.getMonth(), 1);
+        const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+
+        // ещё не нанят
+        if (hireDate > monthEnd) return 0;
+
+        // уже работает полный месяц
+        if (hireDate <= monthStart) return salary;
+
+        // нанят внутри месяца → пропорция по дням
+        const daysInMonth = monthEnd.getDate();
+        const startDay = hireDate.getDate();
+
+        const workedDays = daysInMonth - startDay + 1;
+
+        return Math.round((salary * workedDays) / daysInMonth);
       });
 
       const yearlyTotal = monthly.reduce((a, b) => a + b, 0);
@@ -66,10 +84,12 @@ export default function Home() {
     <main style={{ padding: 40, fontFamily: "Arial" }}>
       <h1>FOTcast</h1>
 
-      <h2>Payroll Matrix (годовая модель)</h2>
+      <h2>Payroll Matrix (CFO-level model)</h2>
 
+      {/* 📂 upload */}
       <input type="file" accept=".xlsx,.xls" onChange={handleFile} />
 
+      {/* 📅 year switch */}
       <div style={{ marginTop: 20 }}>
         <label>Год: </label>
 
@@ -80,6 +100,7 @@ export default function Home() {
         </select>
       </div>
 
+      {/* 📋 table */}
       {data.length > 0 && (
         <table
           border={1}
