@@ -6,9 +6,8 @@ import * as XLSX from "xlsx";
 export default function Home() {
   const [data, setData] = useState<any[]>([]);
 
-  const handleFile = async (e: any) => {
+  const handleFile = (e: any) => {
     const file = e.target.files[0];
-
     const reader = new FileReader();
 
     reader.onload = (event: any) => {
@@ -25,17 +24,28 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
+  // 💡 расчёты
+  const fot = data.reduce((sum, row) => sum + Number(row.salary || 0), 0);
+  const employees = data.length;
+  const avgSalary = employees ? fot / employees : 0;
+
   return (
     <main style={{ padding: 50, fontFamily: "Arial" }}>
       <h1>FOTcast</h1>
 
-      <h2>Сколько будет стоить ваша команда через 12 месяцев — уже сегодня</h2>
-
-      <p>Загрузите Excel-файл и получите данные.</p>
+      <h2>Прогноз фонда оплаты труда</h2>
 
       <input type="file" accept=".xlsx,.xls" onChange={handleFile} />
 
-      <pre>{JSON.stringify(data, null, 2)}</pre>
+      {data.length > 0 && (
+        <div style={{ marginTop: 30 }}>
+          <h3>📊 Результаты</h3>
+
+          <p>Сотрудников: {employees}</p>
+          <p>ФОТ сейчас: {fot.toLocaleString()} ₽</p>
+          <p>Средняя зарплата: {avgSalary.toFixed(0)} ₽</p>
+        </div>
+      )}
     </main>
   );
 }
