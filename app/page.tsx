@@ -4,20 +4,20 @@ import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 
 export default function Home() {
-  // 📦 данные из Excel
+  // 📦 данные из Excel (все сотрудники)
   const [data, setData] = useState<any[]>([]);
 
-  // 📅 выбранный год
+  // 📅 выбранный год расчёта
   const [year, setYear] = useState(2026);
 
-  // 🔀 вкладки интерфейса
+  // 🔀 вкладки: ФОТ / Численность
   const [tab, setTab] = useState<"fot" | "headcount">("fot");
 
-  // 📌 форматирование денег (1 000 000 → 1 000 000 ₽)
+  // 💰 формат денег (1 000 000)
   const formatMoney = (value: number) =>
     new Intl.NumberFormat("ru-RU").format(value);
 
-  // 📌 Excel date → JS date
+  // 📌 Excel дата → JS дата
   const parseExcelDate = (value: any) => {
     if (!value) return null;
 
@@ -29,7 +29,7 @@ export default function Home() {
     return isNaN(d.getTime()) ? null : d;
   };
 
-  // 📂 загрузка Excel файла
+  // 📂 загрузка Excel
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -44,12 +44,12 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // 📅 список месяцев выбранного года
+  // 📅 месяцы выбранного года
   const months = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
   }, [year]);
 
-  // 💰 расчёт сотрудников (ФОТ)
+  // 💰 расчёт ФОТ по сотрудникам
   const employeeRows = useMemo(() => {
     return data.map((row) => {
       const hireDate = parseExcelDate(row.hire_date);
@@ -81,7 +81,7 @@ export default function Home() {
     });
   }, [data, months]);
 
-  // 👥 численность по месяцам (общая)
+  // 👥 headcount (упрощённый общий)
   const headcountByMonth = useMemo(() => {
     return months.map((m) => {
       const end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
@@ -106,10 +106,10 @@ export default function Home() {
     >
       <h1>FOTcast</h1>
 
-      {/* 📂 загрузка Excel */}
+      {/* 📂 upload Excel */}
       <input type="file" onChange={handleFile} />
 
-      {/* 📅 выбор года */}
+      {/* 📅 year selector */}
       <div style={{ marginTop: 20 }}>
         <label>Год: </label>
         <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
@@ -119,33 +119,32 @@ export default function Home() {
         </select>
       </div>
 
-      {/* 🔀 вкладки */}
+      {/* 🔀 tabs */}
       <div style={{ marginTop: 20 }}>
         <button onClick={() => setTab("fot")} style={{ marginRight: 10 }}>
           ФОТ
         </button>
-
         <button onClick={() => setTab("headcount")}>
           Численность
         </button>
       </div>
 
-      {/* 💰 FOT TAB */}
+      {/* 💰 FOT TABLE */}
       {tab === "fot" && (
         <table
+          border={1}
+          cellPadding={6}
           style={{
             marginTop: 30,
             borderCollapse: "collapse",
             width: "100%",
           }}
-          border={1}
-          cellPadding={6}
         >
           <thead>
             <tr style={{ background: "#0abab5", color: "white" }}>
               <th>ФИО</th>
               <th>Подразделение</th>
-              <th>Дата</th>
+              <th>Дата найма</th>
               <th>Оклад</th>
 
               {months.map((m, i) => (
@@ -180,33 +179,36 @@ export default function Home() {
         </table>
       )}
 
-      {/* 👥 HEADCOUNT TAB */}
+      {/* 👥 HEADCOUNT (FIXED SCROLL VERSION) */}
       {tab === "headcount" && (
-        <table
-          style={{
-            marginTop: 30,
-            borderCollapse: "collapse",
-            width: "100%",
-          }}
-          border={1}
-          cellPadding={6}
-        >
-          <thead>
-            <tr style={{ background: "#0abab5", color: "white" }}>
-              <th>Месяц</th>
-              <th>Численность</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {headcountByMonth.map((m, i) => (
-              <tr key={i}>
-                <td>{m.month}</td>
-                <td><b>{m.count}</b></td>
+        <div style={{ marginTop: 30, overflowX: "auto" }}>
+          <table
+            border={1}
+            cellPadding={6}
+            style={{
+              borderCollapse: "collapse",
+              width: "max-content",
+            }}
+          >
+            <thead>
+              <tr style={{ background: "#0abab5", color: "white" }}>
+                <th>Месяц</th>
+                <th>Численность</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {headcountByMonth.map((m, i) => (
+                <tr key={i}>
+                  <td>{m.month}</td>
+                  <td>
+                    <b>{m.count}</b>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </main>
   );
