@@ -23,24 +23,34 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // 📊 старт расчёта (год сценария)
+  // 📌 конвертация Excel даты (ВАЖНО)
+  const parseExcelDate = (value: any) => {
+    if (!value) return null;
+
+    // Excel serial number (например 46266)
+    if (typeof value === "number") {
+      return new Date((value - 25569) * 86400 * 1000);
+    }
+
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // 📅 старт расчёта
   const startDate = new Date(year, 0, 1);
 
-  // 📈 прогноз ФОТ на 12 месяцев
+  // 📊 прогноз ФОТ
   const monthlyFot = Array.from({ length: 12 }, (_, i) => {
-    const monthDate = new Date(
-      startDate.getFullYear(),
-      startDate.getMonth() + i,
-      1
-    );
+    const monthDate = new Date(year, i, 1);
 
     const total = data.reduce((sum, row) => {
-      const hireDate = new Date(row.hire_date);
+      const hireDate = parseExcelDate(row.hire_date);
 
-      if (!row.salary || isNaN(hireDate.getTime())) return sum;
+      if (!hireDate || isNaN(hireDate.getTime())) return sum;
 
-      if (hireDate <= monthDate) {
-        return sum + Number(row.salary);
+      // сотрудник учитывается только после найма
+      if (hireDate.getTime() <= monthDate.getTime()) {
+        return sum + Number(row.salary || 0);
       }
 
       return sum;
@@ -61,10 +71,10 @@ export default function Home() {
 
       <h2>Прогноз фонда оплаты труда</h2>
 
-      {/* 📂 загрузка файла */}
+      {/* загрузка */}
       <input type="file" accept=".xlsx,.xls" onChange={handleFile} />
 
-      {/* 📅 выбор года */}
+      {/* выбор года */}
       <div style={{ marginTop: 20 }}>
         <label>Год расчёта: </label>
 
@@ -75,7 +85,7 @@ export default function Home() {
         </select>
       </div>
 
-      {/* 📋 таблица сотрудников */}
+      {/* таблица */}
       {data.length > 0 && (
         <div style={{ marginTop: 30 }}>
           <h3>📋 Сотрудники</h3>
@@ -94,7 +104,7 @@ export default function Home() {
                 <tr key={i}>
                   <td>{row.name}</td>
                   <td>{Number(row.salary).toLocaleString()} ₽</td>
-                  <td>{row.hire_date}</td>
+                  <td>{String(row.hire_date)}</td>
                 </tr>
               ))}
             </tbody>
@@ -102,7 +112,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 📈 прогноз */}
+      {/* прогноз */}
       {data.length > 0 && (
         <div style={{ marginTop: 40 }}>
           <h3>📈 Прогноз ФОТ</h3>
