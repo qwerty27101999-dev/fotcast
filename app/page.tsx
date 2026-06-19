@@ -4,20 +4,20 @@ import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 
 export default function Home() {
-  // 📦 данные из Excel
+  // 📦 raw data из Excel
   const [data, setData] = useState<any[]>([]);
 
   // 📅 выбранный год расчёта
   const [year, setYear] = useState(2026);
 
-  // 🔀 вкладки интерфейса
+  // 🔀 вкладки UI
   const [tab, setTab] = useState<"fot" | "headcount">("fot");
 
   // 💰 формат денег
   const formatMoney = (value: number) =>
     new Intl.NumberFormat("ru-RU").format(value);
 
-  // 📌 Excel → JS дата
+  // 📌 Excel → JS date parser
   const parseExcelDate = (value: any) => {
     if (!value) return null;
 
@@ -29,7 +29,7 @@ export default function Home() {
     return isNaN(d.getTime()) ? null : d;
   };
 
-  // 📂 загрузка Excel
+  // 📂 загрузка Excel файла
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -44,17 +44,25 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // 📅 месяцы года
+  // 📅 список месяцев выбранного года
   const months = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
   }, [year]);
 
-  // 💰 расчёт ФОТ
+  // 🧠 нормализация департаментов (ВАЖНО для pivot)
+  const departments = useMemo(() => {
+    return Array.from(
+      new Set(data.map((d) => (d.department || "—").trim()))
+    );
+  }, [data]);
+
+  // 💰 расчёт ФОТ по сотрудникам
   const employeeRows = useMemo(() => {
     return data.map((row) => {
       const hireDate = parseExcelDate(row.hire_date);
       const salary = Number(row.salary || 0);
 
+      // 📊 месячный ряд
       const monthly = months.map((m) => {
         if (!hireDate) return 0;
 
@@ -81,24 +89,31 @@ export default function Home() {
     });
   }, [data, months]);
 
-  // 👥 headcount (общий)
-  const headcountByMonth = useMemo(() => {
-    return months.map((m) => {
-      const end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
-
-      return {
-        month: m.toLocaleString("ru-RU", { month: "long", year: "numeric" }),
-        count: data.filter((r) => {
-          const d = parseExcelDate(r.hire_date);
-          return d && d <= end;
-        }).length,
+  // 👥 PIVOT headcount: департамент × месяцы
+  const headcountMatrix = useMemo(() => {
+    return departments.map((dept) => {
+      const row: any = {
+        dept,
       };
-    });
-  }, [data, months]);
 
-  // 📤 EXPORT EXCEL (главная функция продукта)
+      months.forEach((m, i) => {
+        const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+
+        row[i] = data.filter((r) => {
+          const d = parseExcelDate(r.hire_date);
+          const dep = (r.department || "—").trim();
+
+          return dep === dept && d && d <= monthEnd;
+        }).length;
+      });
+
+      return row;
+    });
+  }, [data, months, departments]);
+
+  // 📤 EXPORT EXCEL (3 sheets)
   const exportToExcel = () => {
-    // 📦 employees sheet
+    // 📦 Employees sheet
     const employeesSheet = data.map((r) => ({
       ФИО: r.name,
       Подразделение: r.department || "—",
@@ -122,20 +137,25 @@ export default function Home() {
       return row;
     });
 
-    // 👥 headcount sheet
-    const headcountSheet = headcountByMonth.map((m) => ({
-      Месяц: m.month,
-      Численность: m.count,
-    }));
+    // 👥 Headcount sheet (pivot flatten)
+    const headcountSheet = headcountMatrix.map((r) => {
+      const row: any = {
+        Подразделение: r.dept,
+      };
 
-    // 📘 workbook
+      months.forEach((m, i) => {
+        row[m.toLocaleString("ru-RU", { month: "short" })] = r[i];
+      });
+
+      return row;
+    });
+
     const wb = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(
       wb,
       XLSX.utils.json_to_sheet(employeesSheet),
-      "Employees"
-    );
+      "Employees");
 
     XLSX.utils.book_append_sheet(
       wb,
@@ -149,7 +169,6 @@ export default function Home() {
       "Headcount"
     );
 
-    // 📥 download
     XLSX.writeFile(wb, `FOTcast_${year}.xlsx`);
   };
 
@@ -163,9 +182,10 @@ export default function Home() {
     >
       <h1>FOTcast</h1>
 
-      {/* 📂 upload */}<input type="file" onChange={handleFile} />
+      {/* 📂 загрузка Excel */}
+      <input type="file" onChange={handleFile} />
 
-      {/* 📅 year + EXPORT (GLOBAL BUTTON) */}
+      {/* 📅 year + export */}
       <div style={{ marginTop: 20 }}>
         <label>Год: </label>
 
@@ -175,7 +195,7 @@ export default function Home() {
           <option value={2027}>2027</option>
         </select>
 
-        {/* 📤 единственная кнопка экспорта */}
+        {/* 📤 экспорт */}
         <button
           onClick={exportToExcel}
           style={{
@@ -193,6 +213,7 @@ export default function Home() {
         <button onClick={() => setTab("fot")} style={{ marginRight: 10 }}>
           ФОТ
         </button>
+
         <button onClick={() => setTab("headcount")}>
           Численность
         </button>
@@ -240,14 +261,16 @@ export default function Home() {
                   <td key={j}>{formatMoney(v)}</td>
                 ))}
 
-                <td><b>{formatMoney(e.yearlyTotal)}</b></td>
+                <td>
+                  <b>{formatMoney(e.yearlyTotal)}</b>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
-      {/* 👥 HEADCOUNT */}
+      {/* 👥 HEADCOUNT PIVOT TABLE */}
       {tab === "headcount" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table
@@ -260,16 +283,24 @@ export default function Home() {
           >
             <thead>
               <tr style={{ background: "#0abab5", color: "white" }}>
-                <th>Месяц</th>
-                <th>Численность</th>
+                <th>Подразделение</th>
+
+                {months.map((m, i) => (
+                  <th key={i}>
+                    {m.toLocaleString("ru-RU", { month: "short" })}
+                  </th>
+                ))}
               </tr>
             </thead>
 
             <tbody>
-              {headcountByMonth.map((m, i) => (
+              {headcountMatrix.map((r, i) => (
                 <tr key={i}>
-                  <td>{m.month}</td>
-                  <td><b>{m.count}</b></td>
+                  <td><b>{r.dept}</b></td>
+
+                  {months.map((_, j) => (
+                    <td key={j}>{r[j] ?? 0}</td>
+                  ))}
                 </tr>
               ))}
             </tbody>
