@@ -51,12 +51,11 @@ export default function Home() {
         if (hireDate > monthEnd) return 0;
         if (hireDate <= monthStart) return salary;
 
-        const daysInMonth = monthEnd.getDate();
-        const startDay = hireDate.getDate();
+        const days = monthEnd.getDate();
+        const start = hireDate.getDate();
+        const worked = days - start + 1;
 
-        const workedDays = daysInMonth - startDay + 1;
-
-        return Math.round((salary * workedDays) / daysInMonth);
+        return Math.round((salary * worked) / days);
       });
 
       return {
@@ -71,13 +70,13 @@ export default function Home() {
 
   const headcountByMonth = useMemo(() => {
     return months.map((m) => {
-      const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+      const end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
 
       return {
         month: m.toLocaleString("ru-RU", { month: "long", year: "numeric" }),
         count: data.filter((r) => {
           const d = parseExcelDate(r.hire_date);
-          return d && d <= monthEnd;
+          return d && d <= end;
         }).length,
       };
     });
@@ -98,74 +97,72 @@ export default function Home() {
         </select>
       </div>
 
-      {/* 🔥 ВОТ ЭТО ДОЛЖНО БЫТЬ ВИДНО */}
+      {/* TABS */}
       <div style={{ marginTop: 20 }}>
         <button
           onClick={() => setTab("fot")}
-          style={{
-            marginRight: 10,
-            padding: 8,
-            fontWeight: tab === "fot" ? "bold" : "normal",
-          }}
+          style={{ marginRight: 10 }}
         >
           ФОТ
         </button>
 
-        <button
-          onClick={() => setTab("headcount")}
-          style={{
-            padding: 8,
-            fontWeight: tab === "headcount" ? "bold" : "normal",
-          }}
-        >
+        <button onClick={() => setTab("headcount")}>
           Численность
         </button>
       </div>
 
-      {data.length > 0 && (
-        <table border={1} cellPadding={6} style={{ marginTop: 20 }}>
+      {/* FOT TAB = ПОЛНАЯ ТАБЛИЦА */}
+      {tab === "fot" && data.length > 0 && (
+        <table border={1} cellPadding={6} style={{ marginTop: 30 }}>
           <thead>
             <tr>
               <th>ФИО</th>
-              <th>Дата</th>
+              <th>Дата найма</th>
               <th>Оклад</th>
+              {months.map((m, i) => (
+                <th key={i}>
+                  {m.toLocaleString("ru-RU", { month: "short" })}
+                </th>
+              ))}
+              <th>Год</th>
             </tr>
           </thead>
+
           <tbody>
             {employeeRows.map((e, i) => (
               <tr key={i}>
                 <td>{e.name}</td>
-                <td>
-                  {e.hireDate
-                    ? e.hireDate.toLocaleDateString("ru-RU")
-                    : "—"}
-                </td>
-                <td>{e.salary}</td>
+                <td>{e.hireDate?.toLocaleDateString("ru-RU") || "—"}</td>
+                <td>{e.salary.toLocaleString()}</td>
+
+                {e.monthly.map((v, j) => (
+                  <td key={j}>{v.toLocaleString()}</td>
+                ))}
+
+                <td><b>{e.yearlyTotal.toLocaleString()}</b></td>
               </tr>
             ))}
-          </tbody>
-        </table>
+          </tbody></table>
       )}
 
-      {tab === "fot" && (<div style={{ marginTop: 30 }}>
-          <h3>ФОТ</h3>
-          {employeeRows.map((e, i) => (
-            <p key={i}>
-              {e.name}: {e.yearlyTotal.toLocaleString()} ₽
-            </p>
-          ))}
-        </div>
-      )}
-
+      {/* HEADCOUNT TAB */}
       {tab === "headcount" && (
         <div style={{ marginTop: 30 }}>
           <h3>Численность</h3>
-          <table border={1}>
+
+          <table border={1} cellPadding={6}>
+            <thead>
+              <tr>
+                <th>Месяц</th>
+                <th>Сотрудников</th>
+              </tr>
+            </thead>
+
             <tbody>
               {headcountByMonth.map((m, i) => (
                 <tr key={i}>
                   <td>{m.month}</td>
-                  <td>{m.count}</td>
+                  <td><b>{m.count}</b></td>
                 </tr>
               ))}
             </tbody>
