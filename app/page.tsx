@@ -7,23 +7,23 @@ export default function Home() {
   // 📦 данные сотрудников
   const [data, setData] = useState<any[]>([]);
 
-  // 📅 текущий год (ОГРАНИЧЕНИЕ: нельзя меньше текущего)
+  // 📅 текущий год (ограничение: нельзя ниже текущего)
   const CURRENT_YEAR = new Date().getFullYear();
   const [year, setYear] = useState(CURRENT_YEAR);
 
-  // 🔀 вкладка
-  const [tab, setTab] = useState<"fot" | "headcount">("fot");
+  // 🔀 вкладки
+  const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
   // 💰 формат денег
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(v);
 
-  // 📌 constants страховых
+  // 📌 страховые параметры (фиксируем твою модель)
   const CAP = 2_979_000;
   const RATE_LOW = 0.30;
   const RATE_HIGH = 0.151;
 
-  // 📌 Excel date parser
+  // 📌 Excel → Date
   const parseExcelDate = (value: any) => {
     if (!value) return null;
     if (typeof value === "number") {
@@ -33,7 +33,7 @@ export default function Home() {
     return isNaN(d.getTime()) ? null : d;
   };
 
-  // 📂 upload Excel
+  // 📂 загрузка Excel
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -58,29 +58,30 @@ export default function Home() {
     return Array.from(new Set(data.map(d => d.department || "—")));
   }, [data]);
 
-  // 💰 FOT + insurance model per employee
+  // 🧠 PAYROLL ENGINE (FOT + INS + TOTAL)
   const payroll = useMemo(() => {
-    return data.map((emp) => {
+    return data.map(emp => {
       const hire = parseExcelDate(emp.hire_date);
       const salary = Number(emp.salary || 0);
 
       let cumulative = 0;
 
-      const fot = [];
-      const insurance = [];
-      const total = [];
+      const fot: number[] = [];
+      const ins: number[] = [];
+      const total: number[] = [];
 
       for (let i = 0; i < 12; i++) {
         const m = months[i];
 
-        if (!hire || hire > new Date(m.getFullYear(), m.getMonth() + 1, 0)) {
+        const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+
+        if (!hire || hire > monthEnd) {
           fot.push(0);
-          insurance.push(0);
+          ins.push(0);
           total.push(0);
           continue;
         }
 
-        // 📌 месячный ФОТ (упрощённо)
         const monthFOT = salary;
 
         cumulative += monthFOT;
@@ -91,29 +92,29 @@ export default function Home() {
         // 🔴 превышение
         const excess = Math.max(cumulative - CAP, 0);
 
-        // 📌 распределяем налог пропорционально месяцу (упрощённо)
-        const baseShare = monthFOT * (base / cumulative || 0);
+        // 📌 пропорция месяца (упрощённая модель)
+        const baseShare = cumulative > 0 ? monthFOT * (base / cumulative) : 0;
         const excessShare = monthFOT - baseShare;
 
-        const ins =
+        const insurance =
           baseShare * RATE_LOW + excessShare * RATE_HIGH;
 
         fot.push(monthFOT);
-        insurance.push(Math.round(ins));
-        total.push(monthFOT + Math.round(ins));
+        ins.push(Math.round(insurance));
+        total.push(monthFOT + Math.round(insurance));
       }
 
       return {
         name: emp.name,
         department: emp.department || "—",
         fot,
-        insurance,
+        ins,
         total,
       };
     });
   }, [data, months]);
 
-  // 👥 headcount pivot
+  // 👥 headcount pivot (департамент × месяцы)
   const headcountMatrix = useMemo(() => {
     return departments.map(dep => {
       const row: any = { dep };
@@ -131,40 +132,45 @@ export default function Home() {
     });
   }, [data, months, departments]);
 
-  // 📂 export
+  // 📤 EXPORT EXCEL
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
 
-    const fotSheet = payroll.map(p => ({
-      ФИО: p.name,
-      Подразделение: p.department,
-      ...months.reduce((acc: any, m, i) => {
-        acc[`FOT_${i+1}`] = p.fot[i];
-        return acc;
-      }, {})
-    }));
+    const fotSheet = payroll.map(p => {
+      const row: any = {
+        ФИО: p.name,
+        Подразделение: p.department,
+      };
 
-    const insSheet = payroll.map(p => ({
-      ФИО: p.name,
-      Подразделение: p.department,
-      ...months.reduce((acc: any, m, i) => {
-        acc[`INS_${i+1}`] = p.insurance[i];
-        return acc;
-      }, {})
-    }));
+      months.forEach((_, i) => {
+        row[`FOT_${i+1}`] = p.fot[i];
+        row[`INS_${i+1}`] = p.ins[i];
+        row[`TOTAL_${i+1}`] = p.total[i];
+      });
 
-    const totalSheet = payroll.map(p => ({
-      ФИО: p.name,
-      Подразделение: p.department,
-      ...months.reduce((acc: any, m, i) => {
-        acc[`TOTAL_${i+1}`] = p.total[i];
-        return acc;
-      }, {})
-    }));
+      return row;
+    });
 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fotSheet), "FOT");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(insSheet), "INSURANCE");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(totalSheet), "TOTAL");
+    const headcountSheet = headcountMatrix.map(r => {
+      const row: any = { Подразделение: r.dep };
+
+      months.forEach((_, i) => {row[`M_${i+1}`] = r[i];
+      });
+
+      return row;
+    });
+
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(fotSheet),
+      "PAYROLL"
+    );
+
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(headcountSheet),
+      "HEADCOUNT"
+    );
 
     XLSX.writeFile(wb, `FOTcast_v0.02_${year}.xlsx`);
   };
@@ -182,14 +188,16 @@ export default function Home() {
       {/* 📂 upload */}
       <input type="file" onChange={handleFile} />
 
-      {/* 📅 year control */}
+      {/* 📅 controls */}
       <div style={{ marginTop: 20 }}>
         <select
           value={year}
           onChange={(e) => handleYearChange(Number(e.target.value))}
         >
           {Array.from({ length: 3 }, (_, i) => CURRENT_YEAR + i).map(y => (
-            <option key={y} value={y}>{y}</option>
+            <option key={y} value={y}>
+              {y}
+            </option>
           ))}
         </select>
 
@@ -200,32 +208,76 @@ export default function Home() {
 
       {/* 🔀 tabs */}
       <div style={{ marginTop: 20 }}>
-        <button onClick={() => setTab("fot")}>ФОТ</button>
-        <button onClick={() => setTab("headcount")}>Численность</button>
+        <button onClick={() => setTab("payroll")}>Payroll</button>
+        <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
-      {/* 📊 HEADCOUNT */}
-      {tab === "headcount" && (
-        <table border={1} cellPadding={6}>
-          <thead>
-            <tr style={{ background: "#0abab5", color: "#fff" }}>
-              <th>Департамент</th>
-              {months.map((_, i) => (
-                <th key={i}>{i + 1}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {headcountMatrix.map((r, i) => (
-              <tr key={i}>
-                <td>{r.dep}</td>
-                {months.map((_, j) => (
-                  <td key={j}>{r[j]}</td>
+      {/* 💰 PAYROLL TABLE */}
+      {tab === "payroll" && (
+        <div style={{ marginTop: 30, overflowX: "auto" }}>
+          <table border={1} cellPadding={6}>
+            <thead>
+              <tr style={{ background: "#0abab5", color: "white" }}>
+                <th>ФИО</th>
+                <th>Подразделение</th>
+
+                {months.map((_, i) => (
+                  <>
+                    <th key={"f"+i}>FOT {i+1}</th>
+                    <th key={"i"+i}>INS {i+1}</th>
+                    <th key={"t"+i}>TOTAL {i+1}</th>
+                  </>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {payroll.map((p, idx) => (
+                <tr key={idx}>
+                  <td>{p.name}</td>
+                  <td>{p.department}</td>
+
+                  {months.map((_, i) => (
+                    <>
+                      <td>{formatMoney(p.fot[i])}</td>
+                      <td>{formatMoney(p.ins[i])}</td>
+                      <td>{formatMoney(p.total[i])}</td>
+                    </>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* 👥 HEADCOUNT */}
+      {tab === "headcount" && (
+        <div style={{ marginTop: 30, overflowX: "auto" }}>
+          <table border={1} cellPadding={6}>
+            <thead>
+              <tr style={{ background: "#0abab5", color: "white" }}>
+                <th>Департамент</th>
+
+                {months.map((_, i) => (
+                  <th key={i}>{i + 1}</th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody>
+              {headcountMatrix.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.dep}</td>
+
+                  {months.map((_, j) => (
+                    <td key={j}>{r[j]}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </main>
   );
