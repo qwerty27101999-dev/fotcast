@@ -12,67 +12,44 @@ export default function Home() {
   const RATE_LOW = 0.3;
   const RATE_HIGH = 0.151;
 
-  const formatMoney = (v: number) =>
-    new Intl.NumberFormat("ru-RU").format(v);
+  const STORAGE_PREFIX = "fotcast_user_";
 
-  // 👤 USER SYSTEM
-  const [user, setUser] = useState<string>("");
+  // 👤 LOGIN STATES (FIXED)
+  const [inputUser, setInputUser] = useState("");
+  const [activeUser, setActiveUser] = useState("");
 
   // 📦 DATA STATE
   const [data, setData] = useState<any[]>([]);
   const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
-  const STORAGE_PREFIX = "fotcast_user_";
+  const formatMoney = (v: number) =>
+    new Intl.NumberFormat("ru-RU").format(v);
 
-  // ===================== LOAD USER =====================
+  // ================= LOAD LAST USER =================
   useEffect(() => {
     const lastUser = localStorage.getItem("fotcast_last_user");
-    if (lastUser) setUser(lastUser);
+    if (lastUser) setActiveUser(lastUser);
   }, []);
 
-  // ===================== LOAD USER DATA =====================
+  // ================= LOAD USER DATA =================
   useEffect(() => {
-    if (!user) return;
+    if (!activeUser) return;
 
-    const raw = localStorage.getItem(STORAGE_PREFIX + user);
+    const raw = localStorage.getItem(STORAGE_PREFIX + activeUser);
 
     if (raw) {
       const parsed = JSON.parse(raw);
+
       setData(parsed.data || []);
       setYear(parsed.year || new Date().getFullYear());
       setTab(parsed.tab || "payroll");
+    } else {
+      setData([]);
     }
-  }, [user]);
+  }, [activeUser]);
 
-  // ===================== SAVE USER DATA =====================
-  const saveMemory = () => {
-    if (!user) return;
-
-    const payload = { data, year, tab };
-
-    localStorage.setItem(
-      STORAGE_PREFIX + user,
-      JSON.stringify(payload)
-    );
-
-    localStorage.setItem("fotcast_last_user", user);
-
-    alert("Saved ✔");
-  };
-
-  // ===================== CLEAR USER DATA =====================
-  const clearMemory = () => {
-    if (!user) return;
-
-    localStorage.removeItem(STORAGE_PREFIX + user);
-
-    setData([]);
-    setYear(new Date().getFullYear());
-    setTab("payroll");
-  };
-
-  // ===================== FILE LOAD =====================
+  // ================= FILE IMPORT =================
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -88,21 +65,45 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // ===================== MONTHS =====================
+  // ================= SAVE =================
+  const saveMemory = () => {
+    if (!activeUser) return;
+
+    const payload = { data, year, tab };
+
+    localStorage.setItem(
+      STORAGE_PREFIX + activeUser,
+      JSON.stringify(payload)
+    );
+
+    localStorage.setItem("fotcast_last_user", activeUser);
+
+    alert("Saved ✔");
+  };
+
+  // ================= CLEAR =================
+  const clearMemory = () => {
+    if (!activeUser) return;
+
+    localStorage.removeItem(STORAGE_PREFIX + activeUser);
+
+    setData([]);
+    setYear(new Date().getFullYear());
+    setTab("payroll");
+  };
+
+  // ================= MONTHS =================
   const months = useMemo(
     () => Array.from({ length: 12 }, (_, i) => new Date(year, i, 1)),
     [year]
   );
 
   const monthLabels = useMemo(
-    () =>
-      months.map((m) =>
-        m.toLocaleString("ru", { month: "short" })
-      ),
+    () => months.map((m) => m.toLocaleString("ru", { month: "short" })),
     [months]
   );
 
-  // ===================== PAYROLL =====================
+  // ================= ENGINE =================
   const payroll = useMemo(
     () =>
       buildPayroll(
@@ -116,13 +117,11 @@ export default function Home() {
     [data, months]
   );
 
-  // ===================== HEADCOUNT =====================
   const headcount = useMemo(
     () => buildHeadcount(data, months, parseExcelDate),
     [data, months]
   );
 
-  // ===================== SUMMARY =====================
   const deptSummary = useMemo(() => {
     const map = new Map<string, number[]>();
 
@@ -147,21 +146,27 @@ export default function Home() {
     }));
   }, [payroll]);
 
-  // ===================== LOGIN SCREEN =====================
-  if (!user) {
+  // ================= LOGIN SCREEN =================
+  if (!activeUser) {
     return (
       <main className="app">
         <h1>ФОТcast</h1>
 
         <input
           placeholder="Enter username"
-          onChange={(e) => setUser(e.target.value)}
+          value={inputUser}
+          onChange={(e) => setInputUser(e.target.value)}
         />
 
         <button
           onClick={() => {
-            if (!user) return;
-            localStorage.setItem("fotcast_last_user", user);
+            if (!inputUser.trim()) return;
+
+            setActiveUser(inputUser.trim());
+            localStorage.setItem(
+              "fotcast_last_user",
+              inputUser.trim()
+            );
           }}
         >
           Enter
@@ -176,13 +181,11 @@ export default function Home() {
 
       {/* USER BAR */}
       <div style={{ marginBottom: 20 }}>
-        <b>User:</b> {user}
+        <b>User:</b> {activeUser}
 
         <button
           style={{ marginLeft: 10 }}
-          onClick={() => {
-            setUser("");
-          }}
+          onClick={() => setActiveUser("")}
         >
           Switch user
         </button>
@@ -196,13 +199,13 @@ export default function Home() {
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
         >
-          {Array.from({ length: 3 }, (_, i) => new Date().getFullYear() + i).map(
-            (y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            )
-          )}
+          {Array.from({ length: 3 }, (_, i) =>
+            new Date().getFullYear() + i
+          ).map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
         </select>
 
         <button
@@ -252,8 +255,9 @@ export default function Home() {
                     <td key={i}>
                       <div>
                         <div>{formatMoney(r.total)}</div>
-                        <div style={{ fontSize: 10 }}>
-                          INS {formatMoney(r.ins)} | FOT {formatMoney(r.fot)}
+                        <div style={{ fontSize: 10, opacity: 0.7 }}>
+                          INS {formatMoney(r.ins)} | FOT{" "}
+                          {formatMoney(r.fot)}
                         </div>
                       </div>
                     </td>
