@@ -15,7 +15,6 @@ export default function Home() {
   const STORAGE_PREFIX = "fotcast_user_";
 
   // 👤 USER
-  const [inputUser, setInputUser] = useState("");
   const [activeUser, setActiveUser] = useState("");
 
   // 📦 DATA
@@ -23,16 +22,19 @@ export default function Home() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
-  // 🎯 FILTERS
-  const [depFilter, setDepFilter] = useState("ALL");
-  const [nameFilter, setNameFilter] = useState("");
-  const [minSalary, setMinSalary] = useState("");
-  const [maxSalary, setMaxSalary] = useState("");
+  // 🎯 EXCEL-LIKE FILTERS (multi-select per column)
+  const [filters, setFilters] = useState<{
+    department: string[];
+    name: string[];
+  }>({
+    department: [],
+    name: [],
+  });
 
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(v);
 
-  // ================= USER LOAD =================
+  // ================= LOAD =================
   useEffect(() => {
     const last = localStorage.getItem("fotcast_last_user");
     if (last) setActiveUser(last);
@@ -69,30 +71,6 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // ================= SAVE / CLEAR =================
-  const saveMemory = () => {
-    if (!activeUser) return;
-
-    localStorage.setItem(
-      STORAGE_PREFIX + activeUser,
-      JSON.stringify({ data, year, tab })
-    );
-
-    localStorage.setItem("fotcast_last_user", activeUser);
-
-    alert("Saved ✔");
-  };
-
-  const clearMemory = () => {
-    if (!activeUser) return;
-
-    localStorage.removeItem(STORAGE_PREFIX + activeUser);
-
-    setData([]);
-    setYear(new Date().getFullYear());
-    setTab("payroll");
-  };
-
   // ================= MONTHS =================
   const months = useMemo(
     () => Array.from({ length: 12 }, (_, i) => new Date(year, i, 1)),
@@ -104,30 +82,30 @@ export default function Home() {
     [months]
   );
 
-  // ================= FILTERS =================
-  const departments = useMemo(() => {
-    const set = new Set(data.map((d: any) => d.department || "—"));
-    return ["ALL", ...Array.from(set)];
+  // ================= FILTER OPTIONS =================
+  const departmentOptions = useMemo(() => {
+    return Array.from(new Set(data.map((d: any) => d.department || "—")));
   }, [data]);
 
+  const nameOptions = useMemo(() => {
+    return Array.from(new Set(data.map((d: any) => d.name)));
+  }, [data]);
+
+  // ================= APPLY FILTERS =================
   const filteredData = useMemo(() => {
     return data.filter((emp: any) => {
       const dep = emp.department || "—";
 
-      const salary = Number(
-        String(emp.salary || 0)
-          .replace(/\s/g, "")
-          .replace(",", ".")
-      );
+      const depOk =
+        filters.department.length === 0 ||
+        filters.department.includes(dep);
 
-      return (
-        (depFilter === "ALL" || dep === depFilter) &&
-        emp.name?.toLowerCase().includes(nameFilter.toLowerCase()) &&
-        (!minSalary || salary >= Number(minSalary)) &&
-        (!maxSalary || salary <= Number(maxSalary))
-      );
+      const nameOk =
+        filters.name.length === 0 || filters.name.includes(emp.name);
+
+      return depOk && nameOk;
     });
-  }, [data, depFilter, nameFilter, minSalary, maxSalary]);
+  }, [data, filters]);
 
   // ================= ENGINE =================
   const payroll = useMemo(
@@ -144,21 +122,32 @@ export default function Home() {
   );
 
   const headcount = useMemo(
-    () => buildHeadcount(data, months, parseExcelDate),
-    [data, months]
+    () => buildHeadcount(filteredData, months, parseExcelDate),
+    [filteredData, months]
   );
 
-  // ================= HEADCOUNT SUM =================
   const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
+
+  // ================= FILTER UI =================
+  const toggleFilter = (key: "department" | "name", value: string) => {
+    setFilters((prev) => {
+      const exists = prev[key].includes(value);
+
+      return {
+        ...prev,
+        [key]: exists
+          ? prev[key].filter((v) => v !== value)
+          : [...prev[key], value],
+      };
+    });
+  };
+
+  const clearFilters = () =>
+    setFilters({ department: [], name: [] });
 
   return (
     <main className="app">
-      <h1>ФОТcast v0.09</h1>
-
-      {/* USER */}
-      <div style={{ marginBottom: 20 }}>
-        <b>User:</b> {activeUser}
-      </div>
+      <h1>ФОТcast v0.10</h1>
 
       <input type="file" onChange={handleFile} />
 
@@ -175,46 +164,49 @@ export default function Home() {
           ))}
         </select>
 
-        <button onClick={() => exportPayroll(payroll, monthLabels, year)} style={{ marginLeft: 10 }}>
+        <button onClick={clearFilters} style={{ marginLeft: 10 }}>
+          Clear Filters
+        </button>
+
+        <button
+          onClick={() => exportPayroll(payroll, monthLabels, year)}
+          style={{ marginLeft: 10 }}
+        >
           Export
-        </button>
-
-        <button onClick={saveMemory} style={{ marginLeft: 10 }}>
-          Save
-        </button>
-
-        <button onClick={clearMemory} style={{ marginLeft: 10 }}>
-          Clear
         </button>
       </div>
 
-      {/* FILTERS */}
-      <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <select value={depFilter} onChange={(e) => setDepFilter(e.target.value)}>
-          {departments.map((d) => (
-            <option key={d}>{d}</option>
+      {/* FILTER PANEL (Excel style) */}
+      <div style={{ marginTop: 20 }}>
+        <b>Filters:</b>
+
+        <div style={{ marginTop: 10 }}>
+          <div>Department</div>
+          {departmentOptions.map((d) => (
+            <label key={d} style={{ marginRight: 10 }}>
+              <input
+                type="checkbox"
+                checked={filters.department.includes(d)}
+                onChange={() => toggleFilter("department", d)}
+              />
+              {d}
+            </label>
           ))}
-        </select>
+        </div>
 
-        <input
-          placeholder="Search name"
-          value={nameFilter}
-          onChange={(e) => setNameFilter(e.target.value)}
-        />
-
-        <input
-          placeholder="Min salary"
-          type="number"
-          value={minSalary}
-          onChange={(e) => setMinSalary(e.target.value)}
-        />
-
-        <input
-          placeholder="Max salary"
-          type="number"
-          value={maxSalary}
-          onChange={(e) => setMaxSalary(e.target.value)}
-        />
+        <div style={{ marginTop: 10 }}>
+          <div>Name</div>
+          {nameOptions.map((n) => (
+            <label key={n} style={{ marginRight: 10 }}>
+              <input
+                type="checkbox"
+                checked={filters.name.includes(n)}
+                onChange={() => toggleFilter("name", n)}
+              />
+              {n}
+            </label>
+          ))}
+        </div>
       </div>
 
       {/* TABS */}
@@ -231,64 +223,28 @@ export default function Home() {
               <tr>
                 <th>ФИО</th>
                 <th>Подразделение</th>
-
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
-
                 <th>TOTAL</th>
               </tr>
             </thead>
 
             <tbody>
-              {payroll.map((p: any, i: number) => {
-                const rowTotal = sum(p.rows.map((r: any) => r.total));
+              {payroll.map((p: any, i: number) => (
+                <tr key={i}>
+                  <td>{p.name}</td>
+                  <td>{p.department}</td>
 
-                return (
-                  <tr key={i}>
-                    <td>{p.name}</td>
-                    <td>{p.department}</td>
+                  {p.rows.map((r: any, j: number) => (
+                    <td key={j}>{formatMoney(r.total)}</td>
+                  ))}
 
-                    {p.rows.map((r: any, j: number) => (
-                      <td key={j}>
-                        <div>
-                          <div>{formatMoney(r.total)}</div>
-                          <div style={{ fontSize: 10, opacity: 0.7 }}>
-                            INS: {formatMoney(r.ins)} | FOT: {formatMoney(r.fot)}
-                          </div>
-                        </div>
-                      </td>
-                    ))}
-
-                    <td style={{ fontWeight: 600 }}>
-                      {formatMoney(rowTotal)}
-                    </td>
-                  </tr>
-                );
-              })}
-
-              {/* TOTAL ROW */}
-              <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
-                <td colSpan={2}>TOTAL</td>
-
-                {months.map((_, j) => (
-                  <td key={j}>
-                    {formatMoney(
-                      sum(payroll.map((p: any) => p.rows[j].total))
-                    )}
+                  <td>
+                    {formatMoney(sum(p.rows.map((r: any) => r.total)))}
                   </td>
-                ))}
-
-                <td>
-                  {formatMoney(
-                    sum(
-                      payroll.map((p: any) =>
-                        sum(p.rows.map((r: any) => r.total))
-                      )
-                    )
-                  )}
-                </td>
-              </tr>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -301,7 +257,6 @@ export default function Home() {
             <thead>
               <tr>
                 <th>Департамент</th>
-
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
@@ -319,7 +274,6 @@ export default function Home() {
                 </tr>
               ))}
 
-              {/* TOTAL ROW ONLY */}
               <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
                 <td>TOTAL</td>
 
