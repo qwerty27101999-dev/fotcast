@@ -7,7 +7,7 @@ export default function Home() {
   // 📦 данные
   const [data, setData] = useState<any[]>([]);
 
-  // 📅 год (ограничение)
+  // 📅 год
   const CURRENT_YEAR = new Date().getFullYear();
   const [year, setYear] = useState(CURRENT_YEAR);
 
@@ -23,7 +23,7 @@ export default function Home() {
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(v);
 
-  // 📅 Excel date parser
+  // 📅 Excel date
   const parseExcelDate = (value: any) => {
     if (!value) return null;
     if (typeof value === "number") {
@@ -33,7 +33,7 @@ export default function Home() {
     return isNaN(d.getTime()) ? null : d;
   };
 
-  // 📂 upload Excel
+  // 📂 upload
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -53,7 +53,12 @@ export default function Home() {
     return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
   }, [year]);
 
-  // 🧠 FIXED PAYROLL ENGINE (ВАЖНО)
+  // 👥 departments
+  const departments = useMemo(() => {
+    return Array.from(new Set(data.map(d => d.department || "—")));
+  }, [data]);
+
+  // 🧠 PAYROLL ENGINE (FIXED CAP LOGIC)
   const payroll = useMemo(() => {
     return data.map(emp => {
       const hire = parseExcelDate(emp.hire_date);
@@ -78,26 +83,22 @@ export default function Home() {
 
         const monthFOT = salary;
 
-        const prevCumulative = cumulative;
-        const newCumulative = prevCumulative + monthFOT;
+        const prev = cumulative;
+        const next = prev + monthFOT;
 
-        // 📌 сколько осталось до cap в начале месяца
-        const remainingCap = Math.max(CAP - prevCumulative, 0);
+        const remainingCap = Math.max(CAP - prev, 0);
 
         let insurance = 0;
 
-        // 🟢 полностью в льготной зоне
         if (remainingCap >= monthFOT) {
           insurance = monthFOT * RATE_LOW;
-        } 
-        // 🔴 пересечение cap внутри месяца
-        else {
+        } else {
           const lowPart = remainingCap * RATE_LOW;
           const highPart = (monthFOT - remainingCap) * RATE_HIGH;
           insurance = lowPart + highPart;
         }
 
-        cumulative = newCumulative;
+        cumulative = next;
 
         fot.push(monthFOT);
         ins.push(Math.round(insurance));
@@ -115,10 +116,6 @@ export default function Home() {
   }, [data, months]);
 
   // 👥 headcount
-  const departments = useMemo(() => {
-    return Array.from(new Set(data.map(d => d.department || "—")));
-  }, [data]);
-
   const headcountMatrix = useMemo(() => {
     return departments.map(dep => {
       const row: any = { dep };
@@ -168,10 +165,9 @@ export default function Home() {
     if (y < CURRENT_YEAR) return;
     setYear(y);
   };
-
-  return (
+return (
     <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
-      <h1>FOTcast v0.02 (FIXED ENGINE)</h1>
+      <h1>FOTcast v0.02 FIX</h1>
 
       {/* 📂 upload */}
       <input type="file" onChange={handleFile} />
@@ -198,7 +194,7 @@ export default function Home() {
         <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
-      {/* 💰 PAYROLL */}
+      {/* 💰 PAYROLL TABLE (FIXED LAYOUT) */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table border={1} cellPadding={6}>
