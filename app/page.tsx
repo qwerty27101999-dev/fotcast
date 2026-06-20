@@ -4,26 +4,26 @@ import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 
 export default function Home() {
-  // 📦 данные
+  // 📦 data
   const [data, setData] = useState<any[]>([]);
 
-  // 📅 год
+  // 📅 year
   const CURRENT_YEAR = new Date().getFullYear();
   const [year, setYear] = useState(CURRENT_YEAR);
 
-  // 🔀 вкладки
+  // 🔀 tabs
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
-  // 💰 страховые параметры
+  // 💰 insurance params
   const CAP = 2_979_000;
-  const RATE_LOW = 0.30;
+  const RATE_LOW = 0.3;
   const RATE_HIGH = 0.151;
 
-  // 💸 формат денег
+  // 💸 money format
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(v);
 
-  // 📅 Excel date
+  // 📅 Excel date parser
   const parseExcelDate = (value: any) => {
     if (!value) return null;
     if (typeof value === "number") {
@@ -58,7 +58,7 @@ export default function Home() {
     return Array.from(new Set(data.map(d => d.department || "—")));
   }, [data]);
 
-  // 🧠 PAYROLL ENGINE (FIXED CAP LOGIC)
+  // 🧠 payroll engine (correct cap logic)
   const payroll = useMemo(() => {
     return data.map(emp => {
       const hire = parseExcelDate(emp.hire_date);
@@ -84,7 +84,6 @@ export default function Home() {
         const monthFOT = salary;
 
         const prev = cumulative;
-        const next = prev + monthFOT;
 
         const remainingCap = Math.max(CAP - prev, 0);
 
@@ -93,12 +92,12 @@ export default function Home() {
         if (remainingCap >= monthFOT) {
           insurance = monthFOT * RATE_LOW;
         } else {
-          const lowPart = remainingCap * RATE_LOW;
-          const highPart = (monthFOT - remainingCap) * RATE_HIGH;
-          insurance = lowPart + highPart;
+          insurance =
+            remainingCap * RATE_LOW +
+            (monthFOT - remainingCap) * RATE_HIGH;
         }
 
-        cumulative = next;
+        cumulative += monthFOT;
 
         fot.push(monthFOT);
         ins.push(Math.round(insurance));
@@ -158,25 +157,20 @@ export default function Home() {
       "PAYROLL"
     );
 
-    XLSX.writeFile(wb, `FOTcast_v0.02_FIX_${year}.xlsx`);
+    XLSX.writeFile(wb, `FOTcast_${year}.xlsx`);
   };
 
-  const handleYearChange = (y: number) => {
-    if (y < CURRENT_YEAR) return;
-    setYear(y);
-  };
-return (
+  return (
     <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
-      <h1>FOTcast v0.02 FIX</h1>
+      <h1>FOTcast v0.02 FIX GRID</h1>
 
-      {/* 📂 upload */}
-      <input type="file" onChange={handleFile} />
+      {/* upload */}<input type="file" onChange={handleFile} />
 
-      {/* 📅 controls */}
+      {/* controls */}
       <div style={{ marginTop: 20 }}>
         <select
           value={year}
-          onChange={(e) => handleYearChange(Number(e.target.value))}
+          onChange={(e) => setYear(Number(e.target.value))}
         >
           {Array.from({ length: 3 }, (_, i) => CURRENT_YEAR + i).map(y => (
             <option key={y} value={y}>{y}</option>
@@ -184,27 +178,35 @@ return (
         </select>
 
         <button onClick={exportToExcel} style={{ marginLeft: 10 }}>
-          📤 Export
+          Export
         </button>
       </div>
 
-      {/* 🔀 tabs */}
+      {/* tabs */}
       <div style={{ marginTop: 20 }}>
         <button onClick={() => setTab("payroll")}>Payroll</button>
         <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
-      {/* 💰 PAYROLL TABLE (FIXED LAYOUT) */}
+      {/* 💰 PAYROLL TABLE (FIXED GRID) */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
-          <table border={1} cellPadding={6}>
+          <table
+            border={1}
+            cellPadding={6}
+            style={{
+              tableLayout: "fixed",
+              width: "100%",
+              borderCollapse: "collapse",
+            }}
+          >
             <thead>
               <tr style={{ background: "#0abab5", color: "white" }}>
-                <th>ФИО</th>
-                <th>Подразделение</th>
+                <th rowSpan={2}>ФИО</th>
+                <th rowSpan={2}>Подразделение</th>
 
                 <th colSpan={12}>FOT</th>
-                <th colSpan={12}>INSURANCE</th>
+                <th colSpan={12}>INS</th>
                 <th colSpan={12}>TOTAL</th>
               </tr>
 
