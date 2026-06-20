@@ -19,10 +19,10 @@ export default function Home() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
-  // Jira-style filters (simple text + multi)
+  // 🎯 GLOBAL JIRA-LIKE FILTERS (dropdown style)
   const [filters, setFilters] = useState({
-    department: "",
-    name: "",
+    department: "ALL",
+    name: "ALL",
   });
 
   const formatMoney = (v: number) =>
@@ -94,18 +94,25 @@ export default function Home() {
     [months]
   );
 
-  // ================= FILTER =================
+  // ================= OPTIONS (FOR JIRA FILTERS) =================
+  const departments = useMemo(() => {
+    return Array.from(new Set(data.map((d: any) => d.department || "—")));
+  }, [data]);
+
+  const names = useMemo(() => {
+    return Array.from(new Set(data.map((d: any) => d.name)));
+  }, [data]);
+
+  // ================= FILTERED DATA =================
   const filteredData = useMemo(() => {
     return data.filter((emp: any) => {
       const dep = emp.department || "—";
 
       const depOk =
-        !filters.department ||
-        dep.toLowerCase().includes(filters.department.toLowerCase());
+        filters.department === "ALL" || filters.department === dep;
 
       const nameOk =
-        !filters.name ||
-        emp.name?.toLowerCase().includes(filters.name.toLowerCase());
+        filters.name === "ALL" || filters.name === emp.name;
 
       return depOk && nameOk;
     });
@@ -130,7 +137,7 @@ export default function Home() {
     [filteredData, months]
   );
 
-  // ================= PAYROLL TOTALS =================
+  // ================= TOTALS =================
   const payrollTotals = useMemo(() => {
     const monthly = Array(12).fill(0);
 
@@ -143,7 +150,6 @@ export default function Home() {
     return monthly;
   }, [payroll]);
 
-  // ================= HEADCOUNT TOTALS =================
   const headcountTotals = useMemo(() => {
     const monthly = Array(12).fill(0);
 
@@ -159,11 +165,11 @@ export default function Home() {
   // ================= UI =================
   return (
     <main className="app">
-      <h1>ФОТcast v0.12</h1>
+      <h1>ФОТcast v0.13</h1>
 
       <input type="file" onChange={handleFile} />
 
-      {/* USER CONTROLS */}
+      {/* USER ACTIONS */}
       <div style={{ marginTop: 10 }}>
         <button onClick={saveMemory}>Save</button>
         <button onClick={clearMemory} style={{ marginLeft: 10 }}>
@@ -192,6 +198,51 @@ export default function Home() {
         </button>
       </div>
 
+      {/* 🔥 GLOBAL FILTERS (JIRA STYLE) */}
+      <div style={{ marginTop: 20, display: "flex", gap: 20 }}>
+        <div>
+          <label>Department: </label>
+          <select
+            value={filters.department}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, department: e.target.value }))
+            }
+          >
+            <option value="ALL">All</option>
+            {departments.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label>Name: </label>
+          <select
+            value={filters.name}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, name: e.target.value }))
+            }
+          >
+            <option value="ALL">All</option>
+            {names.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          onClick={() =>
+            setFilters({ department: "ALL", name: "ALL" })
+          }
+        >
+          Reset filters
+        </button>
+      </div>
+
       {/* TABS */}
       <div style={{ marginTop: 20 }}>
         <button onClick={() => setTab("payroll")}>Payroll</button>
@@ -201,25 +252,6 @@ export default function Home() {
       {/* ================= PAYROLL ================= */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
-          {/* Jira-style filters */}
-          <div style={{ marginBottom: 10, display: "flex", gap: 10 }}>
-            <input
-              placeholder="Filter department..."
-              value={filters.department}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, department: e.target.value }))
-              }
-            />
-
-            <input
-              placeholder="Filter name..."
-              value={filters.name}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, name: e.target.value }))
-              }
-            />
-          </div>
-
           <table className="table">
             <thead>
               <tr>
@@ -250,7 +282,6 @@ export default function Home() {
                 </tr>
               ))}
 
-              {/* 🔥 RESTORED TOTAL ROW */}
               <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
                 <td>TOTAL</td>
                 <td />
@@ -277,8 +308,6 @@ export default function Home() {
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
-
-                <th>TOTAL</th>
               </tr>
             </thead>
 
@@ -290,21 +319,8 @@ export default function Home() {
                   {months.map((_, j) => (
                     <td key={j}>{r[j]}</td>
                   ))}
-
-                  <td>{sum(months.map((_, j) => r[j]))}</td>
                 </tr>
               ))}
-
-              {/* TOTAL ROW */}
-              <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
-                <td>TOTAL</td>
-
-                {headcountTotals.map((v, i) => (
-                  <td key={i}>{v}</td>
-                ))}
-
-                <td>{sum(headcountTotals)}</td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -337,16 +353,10 @@ export default function Home() {
           padding: 6px 10px;
         }
 
-        input {
-          padding: 6px 8px;
-          border: 1px solid #ccc;
+        select, button, input {
           font-family: inherit;
           font-size: 12px;
-        }
-
-        button {
-          padding: 6px 10px;
-          font-size: 12px;
+          padding: 6px 8px;
         }
       `}</style>
     </main>
