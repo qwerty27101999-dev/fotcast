@@ -1,27 +1,26 @@
 export function parseExcelDate(value: any) {
   if (!value) return null;
 
-  // Excel serial date
+  // Excel numeric format
   if (typeof value === "number") {
     return new Date((value - 25569) * 86400 * 1000);
   }
 
-  // строка вида 31.08.2026
+  // DD.MM.YYYY format (ВАЖНО для твоего файла)
   if (typeof value === "string") {
     const parts = value.split(".");
 
     if (parts.length === 3) {
-      const day = Number(parts[0]);
-      const month = Number(parts[1]) - 1;
-      const year = Number(parts[2]);
+      const [day, month, year] = parts;
 
-      return new Date(year, month, day);
+      return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day)
+      );
     }
   }
 
   const d = new Date(value);
-
-  return isNaN(d.getTime())
-    ? null
-    : d;
+  return isNaN(d.getTime()) ? null : d;
 }
