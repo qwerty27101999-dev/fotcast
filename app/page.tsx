@@ -4,26 +4,26 @@ import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 
 export default function Home() {
-  // 📦 данные сотрудников
+  // 📦 данные
   const [data, setData] = useState<any[]>([]);
 
-  // 📅 текущий год (ограничение: нельзя ниже текущего)
+  // 📅 год (нельзя меньше текущего)
   const CURRENT_YEAR = new Date().getFullYear();
   const [year, setYear] = useState(CURRENT_YEAR);
 
   // 🔀 вкладки
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
-  // 💰 формат денег
-  const formatMoney = (v: number) =>
-    new Intl.NumberFormat("ru-RU").format(v);
-
-  // 📌 страховые параметры (фиксируем твою модель)
+  // 💰 cap модель страховых
   const CAP = 2_979_000;
   const RATE_LOW = 0.30;
   const RATE_HIGH = 0.151;
 
-  // 📌 Excel → Date
+  // 💸 формат денег
+  const formatMoney = (v: number) =>
+    new Intl.NumberFormat("ru-RU").format(v);
+
+  // 📅 Excel date
   const parseExcelDate = (value: any) => {
     if (!value) return null;
     if (typeof value === "number") {
@@ -33,7 +33,7 @@ export default function Home() {
     return isNaN(d.getTime()) ? null : d;
   };
 
-  // 📂 загрузка Excel
+  // 📂 upload Excel
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -48,7 +48,7 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // 📅 месяцы года
+  // 📅 месяцы
   const months = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
   }, [year]);
@@ -72,7 +72,6 @@ export default function Home() {
 
       for (let i = 0; i < 12; i++) {
         const m = months[i];
-
         const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
 
         if (!hire || hire > monthEnd) {
@@ -83,17 +82,14 @@ export default function Home() {
         }
 
         const monthFOT = salary;
-
         cumulative += monthFOT;
 
-        // 🟢 зона до cap
         const base = Math.min(cumulative, CAP);
-
-        // 🔴 превышение
         const excess = Math.max(cumulative - CAP, 0);
 
-        // 📌 пропорция месяца (упрощённая модель)
-        const baseShare = cumulative > 0 ? monthFOT * (base / cumulative) : 0;
+        const baseShare =
+          cumulative > 0 ? monthFOT * (base / cumulative) : 0;
+
         const excessShare = monthFOT - baseShare;
 
         const insurance =
@@ -114,7 +110,7 @@ export default function Home() {
     });
   }, [data, months]);
 
-  // 👥 headcount pivot (департамент × месяцы)
+  // 👥 headcount
   const headcountMatrix = useMemo(() => {
     return departments.map(dep => {
       const row: any = { dep };
@@ -132,29 +128,20 @@ export default function Home() {
     });
   }, [data, months, departments]);
 
-  // 📤 EXPORT EXCEL
+  // 📤 export
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
 
-    const fotSheet = payroll.map(p => {
+    const sheet = payroll.map(p => {
       const row: any = {
         ФИО: p.name,
         Подразделение: p.department,
       };
 
       months.forEach((_, i) => {
-        row[`FOT_${i+1}`] = p.fot[i];
-        row[`INS_${i+1}`] = p.ins[i];
-        row[`TOTAL_${i+1}`] = p.total[i];
-      });
-
-      return row;
-    });
-
-    const headcountSheet = headcountMatrix.map(r => {
-      const row: any = { Подразделение: r.dep };
-
-      months.forEach((_, i) => {row[`M_${i+1}`] = r[i];
+        row[`FOT_${i + 1}`] = p.fot[i];
+        row[`INS_${i + 1}`] = p.ins[i];
+        row[`TOT_${i + 1}`] = p.total[i];
       });
 
       return row;
@@ -162,27 +149,20 @@ export default function Home() {
 
     XLSX.utils.book_append_sheet(
       wb,
-      XLSX.utils.json_to_sheet(fotSheet),
+      XLSX.utils.json_to_sheet(sheet),
       "PAYROLL"
-    );
-
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.json_to_sheet(headcountSheet),
-      "HEADCOUNT"
     );
 
     XLSX.writeFile(wb, `FOTcast_v0.02_${year}.xlsx`);
   };
 
-  // 🚨 ограничение года
+  // 🚨 годовой guard
   const handleYearChange = (y: number) => {
     if (y < CURRENT_YEAR) return;
     setYear(y);
   };
 
-  return (
-    <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
+  return (<main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
       <h1>FOTcast v0.02</h1>
 
       {/* 📂 upload */}
@@ -195,9 +175,7 @@ export default function Home() {
           onChange={(e) => handleYearChange(Number(e.target.value))}
         >
           {Array.from({ length: 3 }, (_, i) => CURRENT_YEAR + i).map(y => (
-            <option key={y} value={y}>
-              {y}
-            </option>
+            <option key={y} value={y}>{y}</option>
           ))}
         </select>
 
@@ -217,16 +195,34 @@ export default function Home() {
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table border={1} cellPadding={6}>
             <thead>
+              {/* 🟦 group header */}
               <tr style={{ background: "#0abab5", color: "white" }}>
-                <th>ФИО</th>
-                <th>Подразделение</th>
+                <th rowSpan={2}>ФИО</th>
+                <th rowSpan={2}>Подразделение</th>
 
-                {months.map((_, i) => (
-                  <>
-                    <th key={"f"+i}>FOT {i+1}</th>
-                    <th key={"i"+i}>INS {i+1}</th>
-                    <th key={"t"+i}>TOTAL {i+1}</th>
-                  </>
+                <th colSpan={12}>FOT</th>
+                <th colSpan={12}>INSURANCE</th>
+                <th colSpan={12}>TOTAL</th>
+              </tr>
+
+              {/* 🟩 months header */}
+              <tr style={{ background: "#0abab5", color: "white" }}>
+                {months.map((m, i) => (
+                  <th key={"f"+i}>
+                    {m.toLocaleString("ru", { month: "short" })}
+                  </th>
+                ))}
+
+                {months.map((m, i) => (
+                  <th key={"i"+i}>
+                    {m.toLocaleString("ru", { month: "short" })}
+                  </th>
+                ))}
+
+                {months.map((m, i) => (
+                  <th key={"t"+i}>
+                    {m.toLocaleString("ru", { month: "short" })}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -237,12 +233,16 @@ export default function Home() {
                   <td>{p.name}</td>
                   <td>{p.department}</td>
 
-                  {months.map((_, i) => (
-                    <>
-                      <td>{formatMoney(p.fot[i])}</td>
-                      <td>{formatMoney(p.ins[i])}</td>
-                      <td>{formatMoney(p.total[i])}</td>
-                    </>
+                  {p.fot.map((v, i) => (
+                    <td key={"f"+i}>{formatMoney(v)}</td>
+                  ))}
+
+                  {p.ins.map((v, i) => (
+                    <td key={"i"+i}>{formatMoney(v)}</td>
+                  ))}
+
+                  {p.total.map((v, i) => (
+                    <td key={"t"+i}>{formatMoney(v)}</td>
                   ))}
                 </tr>
               ))}
@@ -258,7 +258,6 @@ export default function Home() {
             <thead>
               <tr style={{ background: "#0abab5", color: "white" }}>
                 <th>Департамент</th>
-
                 {months.map((_, i) => (
                   <th key={i}>{i + 1}</th>
                 ))}
@@ -269,7 +268,6 @@ export default function Home() {
               {headcountMatrix.map((r, i) => (
                 <tr key={i}>
                   <td>{r.dep}</td>
-
                   {months.map((_, j) => (
                     <td key={j}>{r[j]}</td>
                   ))}
