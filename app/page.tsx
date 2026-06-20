@@ -3,12 +3,17 @@
 import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 
+type Employee = {
+  name: string;
+  department: string;
+  salary: number;
+  hireDate: Date | null;
+  fireDate: Date | null;
+};
+
 export default function Home() {
   const [data, setData] = useState<any[]>([]);
-
-  const CURRENT_YEAR = new Date().getFullYear();
-  const [year, setYear] = useState(CURRENT_YEAR);
-
+  const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
   const CAP = 2_979_000;
@@ -16,9 +21,12 @@ export default function Home() {
   const RATE_HIGH = 0.151;
 
   const formatMoney = (v: number) =>
-    new Intl.NumberFormat("ru-RU").format(v);
+    new Intl.NumberFormat("ru-RU").format(Math.round(v));
 
-  const parseExcelDate = (value: any) => {
+  // ----------------------------
+  // DATE PARSER
+  // ----------------------------
+  const parseExcelDate = (value: any): Date | null => {
     if (!value) return null;
     if (typeof value === "number") {
       return new Date((value - 25569) * 86400 * 1000);
@@ -27,117 +35,163 @@ export default function Home() {
     return isNaN(d.getTime()) ? null : d;
   };
 
+  // ----------------------------
+  // FILE LOAD
+  // ----------------------------
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
 
     reader.onload = (event: any) => {
-      const wb = XLSX.read(event.target.result, { type: "binary" });
+      const wb = XLSX.read(event.target.result, { type: "array" });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet);
       setData(json);
     };
 
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   };
 
-  // 📅 months
+  // ----------------------------
+  // NORMALIZATION (CRITICAL)
+  // ----------------------------
+  const employees: Employee[] = useMemo(() => {
+    return data.map((emp) => ({
+      name: emp.name,
+      department: (emp.department || "—").trim(),
+      salary: Number(emp.salary || 0),
+      hireDate: parseExcelDate(emp.hire_date),
+      fireDate: parseExcelDate(emp.fire_date),
+    }));
+  }, [data]);
+
+  // ----------------------------
+  // MONTHS
+  // ----------------------------
   const months = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
   }, [year]);
 
-  const monthLabels = months.map(m =>
-    m.toLocaleString("ru", { month: "short" })
+  const monthLabels = useMemo(
+    () => months.map((m) => m.toLocaleString("ru", { month: "short" })),
+    [months]
   );
 
-  const departments = useMemo(() => {
-    return Array.from(new Set(data.map(d => d.department || "—")));
-  }, [data]);
-
-  // 🧠 ENGINE
+  // ----------------------------
+  // PAYROLL ENGINE (FIXED + DAY-BASED)
+  // ----------------------------
   const payroll = useMemo(() => {
-    return data.map(emp => {
-      const hire = parseExcelDate(emp.hire_date);
-      const salary = Number(emp.salary || 0);
-
+    return employees.map((emp) => {
       let cumulative = 0;
-
       const rows: any[] = [];
 
-      for (let i = 0; i < 12; i++) {
-        const m = months[i];
+      const hire = emp.hireDate?.getTime() ?? null;
+      const fire = emp.fireDate?.getTime() ?? null;
+
+      for (const m of months) {
+        const monthStart = new Date(m.getFullYear(), m.getMonth(), 1);
         const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
 
-        if (!hire || hire > monthEnd) {
-          rows.push({
-            fot: 0,
-            ins: 0,
-            total: 0,
-          });
+        const start = hire && hire > monthStart.getTime() ? new Date(hire) : monthStart;
+        const end =
+          fire && fire < monthEnd.getTime() ? new Date(fire) : monthEnd;
+
+        if (!hire || start.getTime() > end.getTime()) {
+          rows.push({ fot: 0, ins: 0, total: 0 });
           continue;
         }
 
-        const monthФОТ = salary;
+        const daysInMonth =
+          (monthEnd.getTime() - monthStart.getTime()) /
+            (1000 * 60 * 60 * 24) +
+          1;
 
-        const prev = cumulative;
-        const remainingCap = Math.max(CAP - prev, 0);
+        const workedDays =
+          (end.getTime() - start.getTime()) /
+            (1000 * 60 * 60 * 24) +
+          1;
 
-        let insurance = 0;
+        const dailyFOT = emp.salary / daysInMonth;
+        const fot = dailyFOT * workedDays;
 
-        if (remainingCap >= monthФОТ) {
-          insurance = monthФОТ * RATE_LOW;
-        } else {
-          insurance =
-            remainingCap * RATE_LOW +
-            (monthФОТ - remainingCap) * RATE_HIGH;
-        }
+        const remaining = Math.max(CAP - cumulative, 0);
 
-        cumulative += monthФОТ;
+        const taxedLow = Math.min(remaining, fot);
+        const taxedHigh = Math.max(fot - remaining, 0);
+
+        const ins = taxedLow * RATE_LOW + taxedHigh * RATE_HIGH;
+
+        cumulative += fot;
 
         rows.push({
-          fot: monthФОТ,
-          ins: Math.round(insurance),
-          total: monthФОТ + Math.round(insurance),
+          fot,
+          ins: Math.round(ins),
+          total: fot + ins,
         });
       }
 
       return {
         name: emp.name,
-        department: emp.department || "—",
+        department: emp.department,
         rows,
       };
     });
-  }, [data, months]);
+  }, [employees, months]);
 
-  // 👥 headcount
+  // ----------------------------
+  // DEPARTMENTS
+  // ----------------------------
+  const departments = useMemo(() => {
+    return Array.from(new Set(employees.map((e) => e.department)));
+  }, [employees]);
+
+  // ----------------------------// HEADCOUNT (OPTIMIZED)
+  // ----------------------------
   const headcountMatrix = useMemo(() => {
-    return departments.map(dep => {
+    return departments.map((dep) => {
       const row: any = { dep };
 
-      months.forEach((m, i) => {
-        const end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+      const emps = employees.filter((e) => e.department === dep);
 
-        row[i] = data.filter(emp => {
-          const d = parseExcelDate(emp.hire_date);
-          return (emp.department || "—") === dep && d && d <= end;
-        }).length;
-      });
+      for (let i = 0; i < months.length; i++) {
+        const end = new Date(
+          months[i].getFullYear(),
+          months[i].getMonth() + 1,
+          0
+        ).getTime();
+
+        let count = 0;
+
+        for (const e of emps) {
+          const hire = e.hireDate?.getTime();
+          const fire = e.fireDate?.getTime();
+
+          if (hire && hire <= end && (!fire || fire > end)) {
+            count++;
+          }
+        }
+
+        row[i] = count;
+      }
 
       return row;
     });
-  }, [data, months, departments]);
+  }, [employees, departments, months]);
 
+  // ----------------------------
+  // EXPORT
+  // ----------------------------
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
 
-    const sheet = payroll.map(p => {
+    const sheet = payroll.map((p) => {
       const row: any = {
         ФИО: p.name,
         Подразделение: p.department,
       };
 
       p.rows.forEach((r: any, i: number) => {
-        row[`ФОТ_${monthLabels[i]}`] = r.fot;
+        row[`FOT_${monthLabels[i]}`] = r.fot;
         row[`INS_${monthLabels[i]}`] = r.ins;
         row[`TOTAL_${monthLabels[i]}`] = r.total;
       });
@@ -151,19 +205,28 @@ export default function Home() {
       "PAYROLL"
     );
 
-    XLSX.writeFile(wb, `ФОТcast_${year}.xlsx`);
+    XLSX.writeFile(wb, `FOTcast_${year}.xlsx`);
   };
 
+  // ----------------------------
+  // UI
+  // ----------------------------
   return (
-    <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
-      <h1>ФОТcast v0.02</h1>
+    <main style={{ padding: 30, fontFamily: "Calibri", fontSize: 12 }}>
+      <h2>FOTcast v0.04 (DAY-BASED ENGINE)</h2>
 
       <input type="file" onChange={handleFile} />
 
       <div style={{ marginTop: 20 }}>
-        <select value={year} onChange={(e) => setYear(Number(e.target.value))}>{Array.from({ length: 3 }, (_, i) => CURRENT_YEAR + i).map(y => (
-            <option key={y} value={y}>{y}</option>
-          ))}
+        <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
+          {[0, 1, 2].map((i) => {
+            const y = new Date().getFullYear() + i;
+            return (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            );
+          })}
         </select>
 
         <button onClick={exportToExcel} style={{ marginLeft: 10 }}>
@@ -176,7 +239,7 @@ export default function Home() {
         <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
-      {/* 💰 PAYROLL */}
+      {/* PAYROLL */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table
@@ -184,45 +247,34 @@ export default function Home() {
             cellPadding={6}
             style={{
               borderCollapse: "collapse",
-              tableLayout: "auto",
               width: "100%",
-              fontFamily: "Calibri",
-              fontSize: 12,
             }}
           >
             <thead>
               <tr style={{ background: "#0abab5", color: "white" }}>
                 <th>ФИО</th>
                 <th>Подразделение</th>
-
                 {monthLabels.map((m, i) => (
-                  <th key={"f"+i}>ФОТ {m}</th>
-                ))}
-                {monthLabels.map((m, i) => (
-                  <th key={"i"+i}>INS {m}</th>
-                ))}
-                {monthLabels.map((m, i) => (
-                  <th key={"t"+i}>TOTAL {m}</th>
+                  <th key={i}>{m}</th>
                 ))}
               </tr>
             </thead>
 
             <tbody>
-              {payroll.map((p, idx) => (
-                <tr key={idx}>
+              {payroll.map((p, i) => (
+                <tr key={i}>
                   <td>{p.name}</td>
                   <td>{p.department}</td>
 
-                  {p.rows.map((r: any, i: number) => (
-                    <td key={"f"+i}>{formatMoney(r.fot)}</td>
-                  ))}
-
-                  {p.rows.map((r: any, i: number) => (
-                    <td key={"i"+i}>{formatMoney(r.ins)}</td>
-                  ))}
-
-                  {p.rows.map((r: any, i: number) => (
-                    <td key={"t"+i}>{formatMoney(r.total)}</td>
+                  {p.rows.map((r: any, j: number) => (
+                    <td key={j}>
+                      <div>
+                        <div>{formatMoney(r.fot)}</div>
+                        <div style={{ opacity: 0.6, fontSize: 10 }}>
+                          {formatMoney(r.ins)}
+                        </div>
+                      </div>
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -231,7 +283,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 👥 HEADCOUNT */}
+      {/* HEADCOUNT */}
       {tab === "headcount" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table border={1} cellPadding={6}>
@@ -244,8 +296,7 @@ export default function Home() {
               </tr>
             </thead>
 
-            <tbody>
-              {headcountMatrix.map((r, i) => (
+            <tbody>{headcountMatrix.map((r, i) => (
                 <tr key={i}>
                   <td>{r.dep}</td>
                   {months.map((_, j) => (
