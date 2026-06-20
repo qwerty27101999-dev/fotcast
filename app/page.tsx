@@ -40,10 +40,7 @@ export default function Home() {
   );
 
   const monthLabels = useMemo(
-    () =>
-      months.map((m) =>
-        m.toLocaleString("ru", { month: "short" })
-      ),
+    () => months.map((m) => m.toLocaleString("ru", { month: "short" })),
     [months]
   );
 
@@ -90,12 +87,11 @@ export default function Home() {
 
   return (
     <main className="app">
-      <h1>ФОТ'каст v0.03</h1>
+      <h1>ФОТcast v0.04</h1>
 
       <input type="file" onChange={handleFile} />
 
-      {/* YEAR */}
-      <div style={{ marginTop: 20 }}>
+      <div className="toolbar">
         <select
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
@@ -109,29 +105,24 @@ export default function Home() {
           )}
         </select>
 
-        <button
-          onClick={() => exportPayroll(payroll, monthLabels, year)}
-          style={{ marginLeft: 10 }}
-        >
+        <button onClick={() => exportPayroll(payroll, monthLabels, year)}>
           Export
         </button>
       </div>
 
-      {/* TABS */}
-      <div style={{ marginTop: 20 }}>
+      <div className="tabs">
         <button onClick={() => setTab("payroll")}>Payroll</button>
         <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
-      {/* ================= PAYROLL ================= */}
+      {/* PAYROLL */}
       {tab === "payroll" && (
-        <div style={{ marginTop: 30, overflowX: "auto" }}>
+        <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
                 <th>ФИО</th>
                 <th>Подразделение</th>
-
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
@@ -146,10 +137,12 @@ export default function Home() {
 
                   {p.rows.map((r: any, i: number) => (
                     <td key={i}>
-                      <div>
-                        <div>{formatMoney(r.total)}</div>
-                        <div style={{ fontSize: 10, opacity: 0.7 }}>
-                          INS: {formatMoney(r.ins)} | FOT: {formatMoney(r.fot)}
+                      <div className="cell">
+                        <div className="main">
+                          {formatMoney(r.total)}
+                        </div>
+                        <div className="sub">
+                          INS {formatMoney(r.ins)} | FOT {formatMoney(r.fot)}
                         </div>
                       </div>
                     </td>
@@ -159,15 +152,14 @@ export default function Home() {
             </tbody>
           </table>
 
-          {/* SUMMARY */}
-          <div style={{ marginTop: 40 }}>
+          <div className="summary">
             <h3>Summary by Department</h3>
 
             <table className="table">
               <thead>
                 <tr>
                   <th>Department</th>
-                  <th>Total Year</th>
+                  <th>Total</th>
                 </tr>
               </thead>
 
@@ -184,14 +176,13 @@ export default function Home() {
         </div>
       )}
 
-      {/* ================= HEADCOUNT ================= */}
+      {/* HEADCOUNT */}
       {tab === "headcount" && (
-        <div style={{ marginTop: 30, overflowX: "auto" }}>
+        <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
                 <th>Департамент</th>
-
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
@@ -202,7 +193,6 @@ export default function Home() {
               {headcount.map((r: any, i: number) => (
                 <tr key={i}>
                   <td>{r.dep}</td>
-
                   {months.map((_, j) => (
                     <td key={j}>{r[j]}</td>
                   ))}
@@ -213,37 +203,61 @@ export default function Home() {
         </div>
       )}
 
-      {/* GLOBAL STYLE */}
       <style jsx global>{`
         .app {
           padding: 40px;
-          font-family: "Calibri", sans-serif;
+          font-family: "Century Gothic", sans-serif;
           font-size: 12px;
-          background: #fff;
-          color: #000;
+        }
+
+        .toolbar {
+          margin-top: 20px;
+          display: flex;
+          gap: 10px;
+        }
+
+        .tabs {
+          margin-top: 20px;
+          display: flex;
+          gap: 10px;
+        }
+
+        .table-wrap {
+          margin-top: 30px;
+          overflow-x: auto;
         }
 
         .table {
           border-collapse: collapse;
           width: 100%;
-          font-family: "Calibri", sans-serif;
-          font-size: 12px;
         }
 
         .table th {
-          background: #1e3a63;
-          color: #fff;
+          background: #1a2a42;
+          color: white;
           font-weight: 400;
-          text-align: center;
           padding: 6px 10px;
           border: 1px solid #d0d7e2;
+          text-align: left;
         }
 
         .table td {
           border: 1px solid #d0d7e2;
           padding: 6px 10px;
-          text-align: left;
           vertical-align: top;
+        }
+
+        .cell .main {
+          font-weight: 400;
+        }
+
+        .cell .sub {
+          font-size: 10px;
+          opacity: 0.7;
+        }
+
+        .summary {
+          margin-top: 40px;
         }
       `}</style>
     </main>
