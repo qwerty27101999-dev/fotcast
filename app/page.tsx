@@ -4,39 +4,43 @@ import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 
 export default function Home() {
-  // 📦 raw data из Excel
+  // 📦 данные сотрудников
   const [data, setData] = useState<any[]>([]);
 
-  // 📅 выбранный год расчёта
-  const [year, setYear] = useState(2026);
+  // 📅 текущий год (ОГРАНИЧЕНИЕ: нельзя меньше текущего)
+  const CURRENT_YEAR = new Date().getFullYear();
+  const [year, setYear] = useState(CURRENT_YEAR);
 
-  // 🔀 вкладки UI
+  // 🔀 вкладка
   const [tab, setTab] = useState<"fot" | "headcount">("fot");
 
   // 💰 формат денег
-  const formatMoney = (value: number) =>
-    new Intl.NumberFormat("ru-RU").format(value);
+  const formatMoney = (v: number) =>
+    new Intl.NumberFormat("ru-RU").format(v);
 
-  // 📌 Excel → JS date parser
+  // 📌 constants страховых
+  const CAP = 2_979_000;
+  const RATE_LOW = 0.30;
+  const RATE_HIGH = 0.151;
+
+  // 📌 Excel date parser
   const parseExcelDate = (value: any) => {
     if (!value) return null;
-
     if (typeof value === "number") {
       return new Date((value - 25569) * 86400 * 1000);
     }
-
     const d = new Date(value);
     return isNaN(d.getTime()) ? null : d;
   };
 
-  // 📂 загрузка Excel файла
+  // 📂 upload Excel
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
 
     reader.onload = (event: any) => {
-      const workbook = XLSX.read(event.target.result, { type: "binary" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const wb = XLSX.read(event.target.result, { type: "binary" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet);
       setData(json);
     };
@@ -44,66 +48,82 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // 📅 список месяцев выбранного года
+  // 📅 месяцы года
   const months = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
   }, [year]);
 
-  // 🧠 нормализация департаментов (ВАЖНО для pivot)
+  // 👥 департаменты
   const departments = useMemo(() => {
-    return Array.from(
-      new Set(data.map((d) => (d.department || "—").trim()))
-    );
+    return Array.from(new Set(data.map(d => d.department || "—")));
   }, [data]);
 
-  // 💰 расчёт ФОТ по сотрудникам
-  const employeeRows = useMemo(() => {
-    return data.map((row) => {
-      const hireDate = parseExcelDate(row.hire_date);
-      const salary = Number(row.salary || 0);
+  // 💰 FOT + insurance model per employee
+  const payroll = useMemo(() => {
+    return data.map((emp) => {
+      const hire = parseExcelDate(emp.hire_date);
+      const salary = Number(emp.salary || 0);
 
-      // 📊 месячный ряд
-      const monthly = months.map((m) => {
-        if (!hireDate) return 0;
+      let cumulative = 0;
 
-        const start = new Date(m.getFullYear(), m.getMonth(), 1);
-        const end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+      const fot = [];
+      const insurance = [];
+      const total = [];
 
-        if (hireDate > end) return 0;
-        if (hireDate <= start) return salary;
+      for (let i = 0; i < 12; i++) {
+        const m = months[i];
 
-        const days = end.getDate();
-        const worked = days - hireDate.getDate() + 1;
+        if (!hire || hire > new Date(m.getFullYear(), m.getMonth() + 1, 0)) {
+          fot.push(0);
+          insurance.push(0);
+          total.push(0);
+          continue;
+        }
 
-        return Math.round((salary * worked) / days);
-      });
+        // 📌 месячный ФОТ (упрощённо)
+        const monthFOT = salary;
+
+        cumulative += monthFOT;
+
+        // 🟢 зона до cap
+        const base = Math.min(cumulative, CAP);
+
+        // 🔴 превышение
+        const excess = Math.max(cumulative - CAP, 0);
+
+        // 📌 распределяем налог пропорционально месяцу (упрощённо)
+        const baseShare = monthFOT * (base / cumulative || 0);
+        const excessShare = monthFOT - baseShare;
+
+        const ins =
+          baseShare * RATE_LOW + excessShare * RATE_HIGH;
+
+        fot.push(monthFOT);
+        insurance.push(Math.round(ins));
+        total.push(monthFOT + Math.round(ins));
+      }
 
       return {
-        name: row.name,
-        department: row.department || "—",
-        hireDate,
-        salary,
-        monthly,
-        yearlyTotal: monthly.reduce((a, b) => a + b, 0),
+        name: emp.name,
+        department: emp.department || "—",
+        fot,
+        insurance,
+        total,
       };
     });
   }, [data, months]);
 
-  // 👥 PIVOT headcount: департамент × месяцы
+  // 👥 headcount pivot
   const headcountMatrix = useMemo(() => {
-    return departments.map((dept) => {
-      const row: any = {
-        dept,
-      };
+    return departments.map(dep => {
+      const row: any = { dep };
 
       months.forEach((m, i) => {
-        const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+        const end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
 
-        row[i] = data.filter((r) => {
-          const d = parseExcelDate(r.hire_date);
-          const dep = (r.department || "—").trim();
-
-          return dep === dept && d && d <= monthEnd;
+        row[i] = data.filter(emp => {
+          const d = parseExcelDate(emp.hire_date);
+          return (emp.department || "—") === dep && d && d <= end;
         }).length;
       });
 
@@ -111,201 +131,101 @@ export default function Home() {
     });
   }, [data, months, departments]);
 
-  // 📤 EXPORT EXCEL (3 sheets)
+  // 📂 export
   const exportToExcel = () => {
-    // 📦 Employees sheet
-    const employeesSheet = data.map((r) => ({
-      ФИО: r.name,
-      Подразделение: r.department || "—",
-      Дата_найма: r.hire_date,
-      Оклад: r.salary,
-    }));
-
-    // 💰 FOT sheet
-    const fotSheet = employeeRows.map((e) => {
-      const row: any = {
-        ФИО: e.name,
-        Подразделение: e.department,
-        Оклад: e.salary,
-        Итого_год: e.yearlyTotal,
-      };
-
-      months.forEach((m, i) => {
-        row[m.toLocaleString("ru-RU", { month: "short" })] = e.monthly[i];
-      });
-
-      return row;
-    });
-
-    // 👥 Headcount sheet (pivot flatten)
-    const headcountSheet = headcountMatrix.map((r) => {
-      const row: any = {
-        Подразделение: r.dept,
-      };
-
-      months.forEach((m, i) => {
-        row[m.toLocaleString("ru-RU", { month: "short" })] = r[i];
-      });
-
-      return row;
-    });
-
     const wb = XLSX.utils.book_new();
 
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.json_to_sheet(employeesSheet),
-      "Employees");
+    const fotSheet = payroll.map(p => ({
+      ФИО: p.name,
+      Подразделение: p.department,
+      ...months.reduce((acc: any, m, i) => {
+        acc[`FOT_${i+1}`] = p.fot[i];
+        return acc;
+      }, {})
+    }));
 
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.json_to_sheet(fotSheet),
-      "FOT"
-    );
+    const insSheet = payroll.map(p => ({
+      ФИО: p.name,
+      Подразделение: p.department,
+      ...months.reduce((acc: any, m, i) => {
+        acc[`INS_${i+1}`] = p.insurance[i];
+        return acc;
+      }, {})
+    }));
 
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.json_to_sheet(headcountSheet),
-      "Headcount"
-    );
+    const totalSheet = payroll.map(p => ({
+      ФИО: p.name,
+      Подразделение: p.department,
+      ...months.reduce((acc: any, m, i) => {
+        acc[`TOTAL_${i+1}`] = p.total[i];
+        return acc;
+      }, {})
+    }));
 
-    XLSX.writeFile(wb, `FOTcast_${year}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fotSheet), "FOT");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(insSheet), "INSURANCE");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(totalSheet), "TOTAL");
+
+    XLSX.writeFile(wb, `FOTcast_v0.02_${year}.xlsx`);
+  };
+
+  // 🚨 ограничение года
+  const handleYearChange = (y: number) => {
+    if (y < CURRENT_YEAR) return;
+    setYear(y);
   };
 
   return (
-    <main
-      style={{
-        padding: 40,
-        fontFamily: "Calibri, Arial",
-        fontSize: 12,
-      }}
-    >
-      <h1>FOTcast</h1>
+    <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
+      <h1>FOTcast v0.02</h1>
 
-      {/* 📂 загрузка Excel */}
+      {/* 📂 upload */}
       <input type="file" onChange={handleFile} />
 
-      {/* 📅 year + export */}
+      {/* 📅 year control */}
       <div style={{ marginTop: 20 }}>
-        <label>Год: </label>
-
-        <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
-          <option value={2025}>2025</option>
-          <option value={2026}>2026</option>
-          <option value={2027}>2027</option>
+        <select
+          value={year}
+          onChange={(e) => handleYearChange(Number(e.target.value))}
+        >
+          {Array.from({ length: 3 }, (_, i) => CURRENT_YEAR + i).map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
         </select>
 
-        {/* 📤 экспорт */}
-        <button
-          onClick={exportToExcel}
-          style={{
-            marginLeft: 15,
-            padding: "6px 10px",
-            cursor: "pointer",
-          }}
-        >
-          📤 Export Excel
+        <button onClick={exportToExcel} style={{ marginLeft: 10 }}>
+          📤 Export
         </button>
       </div>
 
       {/* 🔀 tabs */}
       <div style={{ marginTop: 20 }}>
-        <button onClick={() => setTab("fot")} style={{ marginRight: 10 }}>
-          ФОТ
-        </button>
-
-        <button onClick={() => setTab("headcount")}>
-          Численность
-        </button>
+        <button onClick={() => setTab("fot")}>ФОТ</button>
+        <button onClick={() => setTab("headcount")}>Численность</button>
       </div>
 
-      {/* 💰 FOT TABLE */}
-      {tab === "fot" && (
-        <table
-          border={1}
-          cellPadding={6}
-          style={{
-            marginTop: 30,
-            borderCollapse: "collapse",
-            width: "100%",
-          }}
-        >
+      {/* 📊 HEADCOUNT */}
+      {tab === "headcount" && (
+        <table border={1} cellPadding={6}>
           <thead>
-            <tr style={{ background: "#0abab5", color: "white" }}>
-              <th>ФИО</th>
-              <th>Подразделение</th>
-              <th>Дата</th>
-              <th>Оклад</th>
-
-              {months.map((m, i) => (
-                <th key={i}>
-                  {m.toLocaleString("ru-RU", { month: "short" })}
-                </th>
+            <tr style={{ background: "#0abab5", color: "#fff" }}>
+              <th>Департамент</th>
+              {months.map((_, i) => (
+                <th key={i}>{i + 1}</th>
               ))}
-
-              <th>Год</th>
             </tr>
           </thead>
-
           <tbody>
-            {employeeRows.map((e, i) => (
+            {headcountMatrix.map((r, i) => (
               <tr key={i}>
-                <td>{e.name}</td>
-                <td>{e.department}</td>
-                <td>
-                  {e.hireDate?.toLocaleDateString("ru-RU") || "—"}
-                </td>
-                <td>{formatMoney(e.salary)}</td>
-
-                {e.monthly.map((v, j) => (
-                  <td key={j}>{formatMoney(v)}</td>
+                <td>{r.dep}</td>
+                {months.map((_, j) => (
+                  <td key={j}>{r[j]}</td>
                 ))}
-
-                <td>
-                  <b>{formatMoney(e.yearlyTotal)}</b>
-                </td>
               </tr>
             ))}
           </tbody>
         </table>
-      )}
-
-      {/* 👥 HEADCOUNT PIVOT TABLE */}
-      {tab === "headcount" && (
-        <div style={{ marginTop: 30, overflowX: "auto" }}>
-          <table
-            border={1}
-            cellPadding={6}
-            style={{
-              borderCollapse: "collapse",
-              width: "max-content",
-            }}
-          >
-            <thead>
-              <tr style={{ background: "#0abab5", color: "white" }}>
-                <th>Подразделение</th>
-
-                {months.map((m, i) => (
-                  <th key={i}>
-                    {m.toLocaleString("ru-RU", { month: "short" })}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {headcountMatrix.map((r, i) => (
-                <tr key={i}>
-                  <td><b>{r.dept}</b></td>
-
-                  {months.map((_, j) => (
-                    <td key={j}>{r[j] ?? 0}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       )}
     </main>
   );
