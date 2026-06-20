@@ -8,12 +8,6 @@ import { exportPayroll } from "@/utils/exportExcel";
 import { parseExcelDate } from "@/utils/date";
 
 export default function Home() {
-  const STORAGE_KEY = "fotcast_memory_v1";
-
-  const [data, setData] = useState<any[]>([]);
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
-
   const CAP = 2_979_000;
   const RATE_LOW = 0.3;
   const RATE_HIGH = 0.151;
@@ -21,18 +15,64 @@ export default function Home() {
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(v);
 
-  // 📥 LOAD MEMORY
-  useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
+  // 👤 USER SYSTEM
+  const [user, setUser] = useState<string>("");
 
-      if (parsed.data) setData(parsed.data);
-      if (parsed.year) setYear(parsed.year);
-      if (parsed.tab) setTab(parsed.tab);
-    }
+  // 📦 DATA STATE
+  const [data, setData] = useState<any[]>([]);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
+
+  const STORAGE_PREFIX = "fotcast_user_";
+
+  // ===================== LOAD USER =====================
+  useEffect(() => {
+    const lastUser = localStorage.getItem("fotcast_last_user");
+    if (lastUser) setUser(lastUser);
   }, []);
 
+  // ===================== LOAD USER DATA =====================
+  useEffect(() => {
+    if (!user) return;
+
+    const raw = localStorage.getItem(STORAGE_PREFIX + user);
+
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      setData(parsed.data || []);
+      setYear(parsed.year || new Date().getFullYear());
+      setTab(parsed.tab || "payroll");
+    }
+  }, [user]);
+
+  // ===================== SAVE USER DATA =====================
+  const saveMemory = () => {
+    if (!user) return;
+
+    const payload = { data, year, tab };
+
+    localStorage.setItem(
+      STORAGE_PREFIX + user,
+      JSON.stringify(payload)
+    );
+
+    localStorage.setItem("fotcast_last_user", user);
+
+    alert("Saved ✔");
+  };
+
+  // ===================== CLEAR USER DATA =====================
+  const clearMemory = () => {
+    if (!user) return;
+
+    localStorage.removeItem(STORAGE_PREFIX + user);
+
+    setData([]);
+    setYear(new Date().getFullYear());
+    setTab("payroll");
+  };
+
+  // ===================== FILE LOAD =====================
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -48,16 +88,21 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
+  // ===================== MONTHS =====================
   const months = useMemo(
     () => Array.from({ length: 12 }, (_, i) => new Date(year, i, 1)),
     [year]
   );
 
   const monthLabels = useMemo(
-    () => months.map((m) => m.toLocaleString("ru", { month: "short" })),
+    () =>
+      months.map((m) =>
+        m.toLocaleString("ru", { month: "short" })
+      ),
     [months]
   );
 
+  // ===================== PAYROLL =====================
   const payroll = useMemo(
     () =>
       buildPayroll(
@@ -71,11 +116,13 @@ export default function Home() {
     [data, months]
   );
 
+  // ===================== HEADCOUNT =====================
   const headcount = useMemo(
     () => buildHeadcount(data, months, parseExcelDate),
     [data, months]
   );
 
+  // ===================== SUMMARY =====================
   const deptSummary = useMemo(() => {
     const map = new Map<string, number[]>();
 
@@ -100,34 +147,50 @@ export default function Home() {
     }));
   }, [payroll]);
 
-  // 💾 SAVE
-  const saveMemory = () => {
-    const payload = {
-      data,
-      year,
-      tab,
-    };
+  // ===================== LOGIN SCREEN =====================
+  if (!user) {
+    return (
+      <main className="app">
+        <h1>ФОТcast</h1>
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    alert("Saved ✔");
-  };
+        <input
+          placeholder="Enter username"
+          onChange={(e) => setUser(e.target.value)}
+        />
 
-  // 🧹 CLEAR
-  const clearMemory = () => {
-    localStorage.removeItem(STORAGE_KEY);
-
-    setData([]);
-    setYear(new Date().getFullYear());
-    setTab("payroll");
-  };
+        <button
+          onClick={() => {
+            if (!user) return;
+            localStorage.setItem("fotcast_last_user", user);
+          }}
+        >
+          Enter
+        </button>
+      </main>
+    );
+  }
 
   return (
     <main className="app">
-      <h1>ФОТcast v0.04</h1>
+      <h1>ФОТcast v0.05</h1>
+
+      {/* USER BAR */}
+      <div style={{ marginBottom: 20 }}>
+        <b>User:</b> {user}
+
+        <button
+          style={{ marginLeft: 10 }}
+          onClick={() => {
+            setUser("");
+          }}
+        >
+          Switch user
+        </button>
+      </div>
 
       <input type="file" onChange={handleFile} />
 
-      {/* YEAR + ACTIONS */}
+      {/* CONTROLS */}
       <div style={{ marginTop: 20 }}>
         <select
           value={year}
@@ -164,7 +227,7 @@ export default function Home() {
         <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
-      {/* ================= PAYROLL ================= */}
+      {/* PAYROLL */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table className="table">
@@ -189,7 +252,7 @@ export default function Home() {
                     <td key={i}>
                       <div>
                         <div>{formatMoney(r.total)}</div>
-                        <div style={{ fontSize: 10, opacity: 0.7 }}>
+                        <div style={{ fontSize: 10 }}>
                           INS {formatMoney(r.ins)} | FOT {formatMoney(r.fot)}
                         </div>
                       </div>
@@ -202,7 +265,7 @@ export default function Home() {
 
           {/* SUMMARY */}
           <div style={{ marginTop: 40 }}>
-            <h3>Summary by Department (Monthly)</h3>
+            <h3>Summary by Department</h3>
 
             <table className="table">
               <thead>
@@ -235,7 +298,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ================= HEADCOUNT ================= */}
+      {/* HEADCOUNT */}
       {tab === "headcount" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table className="table">
@@ -264,28 +327,24 @@ export default function Home() {
         </div>
       )}
 
-      {/* GLOBAL STYLE */}
+      {/* STYLE */}
       <style jsx global>{`
         .app {
           padding: 40px;
           font-family: "Century Gothic", sans-serif;
           font-size: 12px;
-          background: #fff;
-          color: #000;
         }
 
         .table {
           border-collapse: collapse;
           width: 100%;
-          font-family: "Century Gothic", sans-serif;
           font-size: 12px;
         }
 
         .table th {
           background: #1a2a42;
-          color: #fff;
+          color: white;
           font-weight: 400;
-          text-align: left;
           padding: 6px 10px;
           border: 1px solid #d0d7e2;
         }
@@ -293,8 +352,6 @@ export default function Home() {
         .table td {
           border: 1px solid #d0d7e2;
           padding: 6px 10px;
-          text-align: left;
-          vertical-align: top;
         }
       `}</style>
     </main>
