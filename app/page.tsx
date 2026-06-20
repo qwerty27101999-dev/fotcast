@@ -19,7 +19,7 @@ export default function Home() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
-  // 🎯 GLOBAL JIRA-LIKE FILTERS (dropdown style)
+  // 🔥 linked filters (JIRA-like dependency)
   const [filters, setFilters] = useState({
     department: "ALL",
     name: "ALL",
@@ -94,16 +94,29 @@ export default function Home() {
     [months]
   );
 
-  // ================= OPTIONS (FOR JIRA FILTERS) =================
-  const departments = useMemo(() => {
+  // ================= LINKED FILTER OPTIONS =================
+  const baseFiltered = useMemo(() => {
+    return data.filter((emp: any) => {
+      const dep = emp.department || "—";
+      const depOk =
+        filters.department === "ALL" || filters.department === dep;
+
+      return depOk;
+    });
+  }, [data, filters.department]);
+
+  const departmentOptions = useMemo(() => {
     return Array.from(new Set(data.map((d: any) => d.department || "—")));
   }, [data]);
 
-  const names = useMemo(() => {
-    return Array.from(new Set(data.map((d: any) => d.name)));
-  }, [data]);
+  const nameOptions = useMemo(() => {
+    // 🔥 depends on selected department
+    return Array.from(
+      new Set(baseFiltered.map((d: any) => d.name))
+    );
+  }, [baseFiltered]);
 
-  // ================= FILTERED DATA =================
+  // ================= FINAL FILTER =================
   const filteredData = useMemo(() => {
     return data.filter((emp: any) => {
       const dep = emp.department || "—";
@@ -165,7 +178,7 @@ export default function Home() {
   // ================= UI =================
   return (
     <main className="app">
-      <h1>ФОТcast v0.13</h1>
+      <h1>ФОТcast v0.14</h1>
 
       <input type="file" onChange={handleFile} />
 
@@ -198,18 +211,22 @@ export default function Home() {
         </button>
       </div>
 
-      {/* 🔥 GLOBAL FILTERS (JIRA STYLE) */}
+      {/* FILTERS */}
       <div style={{ marginTop: 20, display: "flex", gap: 20 }}>
         <div>
           <label>Department: </label>
           <select
             value={filters.department}
             onChange={(e) =>
-              setFilters((f) => ({ ...f, department: e.target.value }))
+              setFilters((f) => ({
+                ...f,
+                department: e.target.value,
+                name: "ALL", // reset name when dept changes
+              }))
             }
           >
             <option value="ALL">All</option>
-            {departments.map((d) => (
+            {departmentOptions.map((d) => (
               <option key={d} value={d}>
                 {d}
               </option>
@@ -226,7 +243,7 @@ export default function Home() {
             }
           >
             <option value="ALL">All</option>
-            {names.map((n) => (
+            {nameOptions.map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>
@@ -234,11 +251,7 @@ export default function Home() {
           </select>
         </div>
 
-        <button
-          onClick={() =>
-            setFilters({ department: "ALL", name: "ALL" })
-          }
-        >
+        <button onClick={() => setFilters({ department: "ALL", name: "ALL" })}>
           Reset filters
         </button>
       </div>
@@ -321,6 +334,15 @@ export default function Home() {
                   ))}
                 </tr>
               ))}
+
+              {/* 🔥 RESTORED TOTAL ROW */}
+              <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
+                <td>TOTAL</td>
+
+                {headcountTotals.map((v, i) => (
+                  <td key={i}>{v}</td>
+                ))}
+              </tr>
             </tbody>
           </table>
         </div>
@@ -351,12 +373,6 @@ export default function Home() {
         .table td {
           border: 1px solid #d0d7e2;
           padding: 6px 10px;
-        }
-
-        select, button, input {
-          font-family: inherit;
-          font-size: 12px;
-          padding: 6px 8px;
         }
       `}</style>
     </main>
