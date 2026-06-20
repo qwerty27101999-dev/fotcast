@@ -7,14 +7,14 @@ export default function Home() {
   // 📦 данные
   const [data, setData] = useState<any[]>([]);
 
-  // 📅 год (нельзя меньше текущего)
+  // 📅 год (ограничение)
   const CURRENT_YEAR = new Date().getFullYear();
   const [year, setYear] = useState(CURRENT_YEAR);
 
   // 🔀 вкладки
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
-  // 💰 cap модель страховых
+  // 💰 страховые параметры
   const CAP = 2_979_000;
   const RATE_LOW = 0.30;
   const RATE_HIGH = 0.151;
@@ -23,7 +23,7 @@ export default function Home() {
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(v);
 
-  // 📅 Excel date
+  // 📅 Excel date parser
   const parseExcelDate = (value: any) => {
     if (!value) return null;
     if (typeof value === "number") {
@@ -48,17 +48,12 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // 📅 месяцы
+  // 📅 months
   const months = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
   }, [year]);
 
-  // 👥 департаменты
-  const departments = useMemo(() => {
-    return Array.from(new Set(data.map(d => d.department || "—")));
-  }, [data]);
-
-  // 🧠 PAYROLL ENGINE (FOT + INS + TOTAL)
+  // 🧠 FIXED PAYROLL ENGINE (ВАЖНО)
   const payroll = useMemo(() => {
     return data.map(emp => {
       const hire = parseExcelDate(emp.hire_date);
@@ -82,18 +77,27 @@ export default function Home() {
         }
 
         const monthFOT = salary;
-        cumulative += monthFOT;
 
-        const base = Math.min(cumulative, CAP);
-        const excess = Math.max(cumulative - CAP, 0);
+        const prevCumulative = cumulative;
+        const newCumulative = prevCumulative + monthFOT;
 
-        const baseShare =
-          cumulative > 0 ? monthFOT * (base / cumulative) : 0;
+        // 📌 сколько осталось до cap в начале месяца
+        const remainingCap = Math.max(CAP - prevCumulative, 0);
 
-        const excessShare = monthFOT - baseShare;
+        let insurance = 0;
 
-        const insurance =
-          baseShare * RATE_LOW + excessShare * RATE_HIGH;
+        // 🟢 полностью в льготной зоне
+        if (remainingCap >= monthFOT) {
+          insurance = monthFOT * RATE_LOW;
+        } 
+        // 🔴 пересечение cap внутри месяца
+        else {
+          const lowPart = remainingCap * RATE_LOW;
+          const highPart = (monthFOT - remainingCap) * RATE_HIGH;
+          insurance = lowPart + highPart;
+        }
+
+        cumulative = newCumulative;
 
         fot.push(monthFOT);
         ins.push(Math.round(insurance));
@@ -111,6 +115,10 @@ export default function Home() {
   }, [data, months]);
 
   // 👥 headcount
+  const departments = useMemo(() => {
+    return Array.from(new Set(data.map(d => d.department || "—")));
+  }, [data]);
+
   const headcountMatrix = useMemo(() => {
     return departments.map(dep => {
       const row: any = { dep };
@@ -141,7 +149,7 @@ export default function Home() {
       months.forEach((_, i) => {
         row[`FOT_${i + 1}`] = p.fot[i];
         row[`INS_${i + 1}`] = p.ins[i];
-        row[`TOT_${i + 1}`] = p.total[i];
+        row[`TOTAL_${i + 1}`] = p.total[i];
       });
 
       return row;
@@ -153,17 +161,17 @@ export default function Home() {
       "PAYROLL"
     );
 
-    XLSX.writeFile(wb, `FOTcast_v0.02_${year}.xlsx`);
+    XLSX.writeFile(wb, `FOTcast_v0.02_FIX_${year}.xlsx`);
   };
 
-  // 🚨 годовой guard
   const handleYearChange = (y: number) => {
     if (y < CURRENT_YEAR) return;
     setYear(y);
   };
 
-  return (<main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
-      <h1>FOTcast v0.02</h1>
+  return (
+    <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
+      <h1>FOTcast v0.02 (FIXED ENGINE)</h1>
 
       {/* 📂 upload */}
       <input type="file" onChange={handleFile} />
@@ -190,35 +198,31 @@ export default function Home() {
         <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
-      {/* 💰 PAYROLL TABLE */}
+      {/* 💰 PAYROLL */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table border={1} cellPadding={6}>
             <thead>
-              {/* 🟦 group header */}
               <tr style={{ background: "#0abab5", color: "white" }}>
-                <th rowSpan={2}>ФИО</th>
-                <th rowSpan={2}>Подразделение</th>
+                <th>ФИО</th>
+                <th>Подразделение</th>
 
                 <th colSpan={12}>FOT</th>
                 <th colSpan={12}>INSURANCE</th>
                 <th colSpan={12}>TOTAL</th>
               </tr>
 
-              {/* 🟩 months header */}
               <tr style={{ background: "#0abab5", color: "white" }}>
                 {months.map((m, i) => (
                   <th key={"f"+i}>
                     {m.toLocaleString("ru", { month: "short" })}
                   </th>
                 ))}
-
                 {months.map((m, i) => (
                   <th key={"i"+i}>
                     {m.toLocaleString("ru", { month: "short" })}
                   </th>
                 ))}
-
                 {months.map((m, i) => (
                   <th key={"t"+i}>
                     {m.toLocaleString("ru", { month: "short" })}
