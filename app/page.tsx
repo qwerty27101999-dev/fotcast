@@ -29,9 +29,6 @@ export default function Home() {
   const [minSalary, setMinSalary] = useState("");
   const [maxSalary, setMaxSalary] = useState("");
 
-  // 🧠 HEADCOUNT MODE TOGGLE
-  const [hcMode, setHcMode] = useState<"global" | "filtered">("global");
-
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(v);
 
@@ -41,7 +38,6 @@ export default function Home() {
     if (last) setActiveUser(last);
   }, []);
 
-  // ================= LOAD DATA =================
   useEffect(() => {
     if (!activeUser) return;
 
@@ -73,7 +69,7 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // ================= SAVE =================
+  // ================= SAVE / CLEAR =================
   const saveMemory = () => {
     if (!activeUser) return;
 
@@ -124,19 +120,16 @@ export default function Home() {
           .replace(",", ".")
       );
 
-      const matchDep = depFilter === "ALL" || dep === depFilter;
-
-      const matchName =
-        emp.name?.toLowerCase().includes(nameFilter.toLowerCase());
-
-      const matchMin = !minSalary || salary >= Number(minSalary);
-      const matchMax = !maxSalary || salary <= Number(maxSalary);
-
-      return matchDep && matchName && matchMin && matchMax;
+      return (
+        (depFilter === "ALL" || dep === depFilter) &&
+        emp.name?.toLowerCase().includes(nameFilter.toLowerCase()) &&
+        (!minSalary || salary >= Number(minSalary)) &&
+        (!maxSalary || salary <= Number(maxSalary))
+      );
     });
   }, [data, depFilter, nameFilter, minSalary, maxSalary]);
 
-  // ================= PAYROLL =================
+  // ================= ENGINE =================
   const payroll = useMemo(
     () =>
       buildPayroll(
@@ -150,74 +143,21 @@ export default function Home() {
     [filteredData, months]
   );
 
-  // ================= HEADCOUNT (FIXED LOGIC) =================
-  const headcountSource = hcMode === "filtered" ? filteredData : data;
-
   const headcount = useMemo(
-    () => buildHeadcount(headcountSource, months, parseExcelDate),
-    [headcountSource, months, hcMode]
+    () => buildHeadcount(data, months, parseExcelDate),
+    [data, months]
   );
 
-  // ================= DEPT SUMMARY =================
-  const deptSummary = useMemo(() => {
-    const map = new Map<string, number[]>();
-
-    payroll.forEach((emp: any) => {
-      const dep = emp.department || "—";
-
-      if (!map.has(dep)) {
-        map.set(dep, Array(12).fill(0));
-      }
-
-      const arr = map.get(dep)!;
-
-      emp.rows.forEach((r: any, i: number) => {
-        arr[i] += r.total;
-      });
-    });
-
-    return Array.from(map.entries()).map(([dep, months]) => ({
-      dep,
-      months,
-      totalYear: months.reduce((a, b) => a + b, 0),
-    }));
-  }, [payroll]);
-
-  // ================= LOGIN =================
-  if (!activeUser) {
-    return (
-      <main className="app">
-        <h1>ФОТcast</h1>
-
-        <input
-          placeholder="Enter username"
-          value={inputUser}
-          onChange={(e) => setInputUser(e.target.value)}
-        />
-
-        <button
-          onClick={() => {
-            if (!inputUser.trim()) return;
-            setActiveUser(inputUser.trim());
-          }}
-        >
-          Enter
-        </button>
-      </main>
-    );
-  }
+  // ================= HEADCOUNT SUM =================
+  const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 
   return (
     <main className="app">
-      <h1>ФОТcast v0.07</h1>
+      <h1>ФОТcast v0.08</h1>
 
       {/* USER */}
       <div style={{ marginBottom: 20 }}>
         <b>User:</b> {activeUser}
-
-        <button onClick={() => setActiveUser("")} style={{ marginLeft: 10 }}>
-          Switch
-        </button>
       </div>
 
       <input type="file" onChange={handleFile} />
@@ -275,34 +215,7 @@ export default function Home() {
           value={maxSalary}
           onChange={(e) => setMaxSalary(e.target.value)}
         />
-
-        <button
-          onClick={() => {
-            setDepFilter("ALL");
-            setNameFilter("");
-            setMinSalary("");
-            setMaxSalary("");
-          }}
-        >
-          Reset
-        </button>
       </div>
-
-      {/* HEADCOUNT MODE */}
-      {tab === "headcount" && (
-        <div style={{ marginTop: 15 }}>
-          <label>
-            <input
-              type="checkbox"
-              checked={hcMode === "filtered"}
-              onChange={(e) =>
-                setHcMode(e.target.checked ? "filtered" : "global")
-              }
-            />
-            Apply filters to Headcount
-          </label>
-        </div>
-      )}
 
       {/* TABS */}
       <div style={{ marginTop: 20 }}>
@@ -310,7 +223,7 @@ export default function Home() {
         <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
-      {/* PAYROLL */}
+      {/* ================= PAYROLL ================= */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table className="table">
@@ -321,47 +234,108 @@ export default function Home() {
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
+                <th>TOTAL</th>
               </tr>
             </thead>
 
             <tbody>
-              {payroll.map((p: any, i: number) => (
-                <tr key={i}>
-                  <td>{p.name}</td>
-                  <td>{p.department}</td>
+              {payroll.map((p: any, i: number) => {
+                const rowTotal = sum(p.rows.map((r: any) => r.total));
 
-                  {p.rows.map((r: any, j: number) => (
-                    <td key={j}>{formatMoney(r.total)}</td>
-                  ))}
-                </tr>
-              ))}
+                return (
+                  <tr key={i}>
+                    <td>{p.name}</td>
+                    <td>{p.department}</td>
+
+                    {p.rows.map((r: any, j: number) => (
+                      <td key={j}>{formatMoney(r.total)}</td>
+                    ))}
+
+                    <td style={{ fontWeight: 600 }}>
+                      {formatMoney(rowTotal)}
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {/* TOTAL ROW */}
+              <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
+                <td colSpan={2}>TOTAL</td>
+
+                {months.map((_, j) => (
+                  <td key={j}>
+                    {formatMoney(
+                      sum(payroll.map((p: any) => p.rows[j].total))
+                    )}
+                  </td>
+                ))}
+
+                <td>
+                  {formatMoney(
+                    sum(
+                      payroll.map((p: any) =>
+                        sum(p.rows.map((r: any) => r.total))
+                      )
+                    )
+                  )}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
       )}
 
-      {/* HEADCOUNT */}
+      {/* ================= HEADCOUNT ================= */}
       {tab === "headcount" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table className="table">
             <thead>
               <tr>
                 <th>Департамент</th>
+
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
+
+                <th>TOTAL</th>
               </tr>
             </thead>
 
             <tbody>
-              {headcount.map((r: any, i: number) => (
-                <tr key={i}>
-                  <td>{r.dep}</td>
-                  {months.map((_, j) => (
-                    <td key={j}>{r[j]}</td>
-                  ))}
-                </tr>
-              ))}
+              {headcount.map((r: any, i: number) => {
+                const rowTotal = sum(months.map((_, j) => r[j]));
+
+                return (
+                  <tr key={i}>
+                    <td>{r.dep}</td>
+
+                    {months.map((_, j) => (
+                      <td key={j}>{r[j]}</td>
+                    ))}
+
+                    <td style={{ fontWeight: 600 }}>{rowTotal}</td>
+                  </tr>
+                );
+              })}
+
+              {/* TOTAL ROW */}
+              <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
+                <td>TOTAL</td>
+
+                {months.map((_, j) => (
+                  <td key={j}>
+                    {sum(headcount.map((r: any) => r[j]))}
+                  </td>
+                ))}
+
+                <td>
+                  {sum(
+                    headcount.map((r: any) =>
+                      sum(months.map((_, j) => r[j]))
+                    )
+                  )}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
