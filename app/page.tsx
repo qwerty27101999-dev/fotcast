@@ -183,12 +183,18 @@ export default function Home() {
       </div>
 
 {/* TABS */}
-<div style={{ marginTop: 20, display: "flex", gap: 10 }}>
-  <button onClick={() => setTab("payroll")}>
+<div style={{ marginTop: 20, display: "flex", gap: 8 }}>
+  <button
+    className={`btn btn-tab ${tab === "payroll" ? "btn-tab-active" : ""}`}
+    onClick={() => setTab("payroll")}
+  >
     Payroll
   </button>
 
-  <button onClick={() => setTab("headcount")}>
+  <button
+    className={`btn btn-tab ${tab === "headcount" ? "btn-tab-active" : ""}`}
+    onClick={() => setTab("headcount")}
+  >
     Headcount
   </button>
 </div>
