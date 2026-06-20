@@ -182,6 +182,17 @@ export default function Home() {
         </button>
       </div>
 
+{/* TABS */}
+<div style={{ marginTop: 20, display: "flex", gap: 10 }}>
+  <button onClick={() => setTab("payroll")}>
+    Payroll
+  </button>
+
+  <button onClick={() => setTab("headcount")}>
+    Headcount
+  </button>
+</div>
+
       {/* FILTERS */}
       <div style={{ marginTop: 20, display: "flex", gap: 20 }}>
         <select
