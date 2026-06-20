@@ -159,10 +159,13 @@ export default function Home() {
       <input type="file" onChange={handleFile} />
 
       <div style={{ marginTop: 10 }}>
-        <button onClick={saveMemory}>Сохранить</button>
-        <button onClick={clearMemory} style={{ marginLeft: 10 }}>
-          Очистить
-        </button>
+        <button className="btn" onClick={saveMemory}>
+  Сохранить
+</button>
+
+<button className="btn" onClick={clearMemory}>
+  Очистить
+</button>
       </div>
 
       <div style={{ marginTop: 20 }}>
