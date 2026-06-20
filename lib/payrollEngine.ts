@@ -25,18 +25,29 @@ export function buildPayroll(
       const monthStart = new Date(m.getFullYear(), m.getMonth(), 1);
       const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
 
-      // 💰 PAYROLL LOGIC: worked at least 1 day in month
-      const active =
-        hire &&
-        hire <= monthEnd &&
-        (!termination || termination >= monthEnd)
+      // 🧠 real working window inside month
+      const start = hire && hire > monthStart ? hire : monthStart;
+      const end =
+        termination && termination < monthEnd ? termination : monthEnd;
 
-      if (!active) {
+      // ❌ not active at all
+      if (!hire || start > end) {
         rows.push({ fot: 0, ins: 0, total: 0 });
         continue;
       }
 
-      const fot = salary;
+      // 💥 DAYS CALC
+      const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+      const workedDays =
+        Math.floor((end.getTime() - start.getTime()) / MS_PER_DAY) + 1;
+
+      const totalDays =
+        Math.floor((monthEnd.getTime() - monthStart.getTime()) / MS_PER_DAY) + 1;
+
+      const ratio = workedDays / totalDays;
+
+      const fot = salary * ratio;
 
       const remainingCap = Math.max(CAP - cumulative, 0);
 
@@ -53,9 +64,9 @@ export function buildPayroll(
       cumulative += fot;
 
       rows.push({
-        fot,
+        fot: Math.round(fot),
         ins: Math.round(ins),
-        total: fot + Math.round(ins),
+        total: Math.round(fot + ins),
       });
     }
 
