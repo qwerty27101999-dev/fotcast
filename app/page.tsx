@@ -231,10 +231,10 @@ export default function Home() {
         }
 
         .table th {
-          background: #0d1d35;
+          background: #1e3a63;
           color: #fff;
           font-weight: 400;
-          text-align: left;
+          text-align: center;
           padding: 6px 10px;
           border: 1px solid #d0d7e2;
         }
