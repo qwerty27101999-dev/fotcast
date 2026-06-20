@@ -65,9 +65,45 @@ export default function Home() {
     [data, months]
   );
 
+  // 💥 DEPARTMENT SUMMARY (NEW)
+  const deptSummary = useMemo(() => {
+    const map = new Map<string, number[]>();
+
+    data.forEach((emp) => {
+      const dep = emp.department || "—";
+      if (!map.has(dep)) {
+        map.set(dep, Array(12).fill(0));
+      }
+    });
+
+    payroll.forEach((emp) => {
+      const dep = emp.department || "—";
+      const arr = map.get(dep)!;
+
+      emp.rows.forEach((r: any, i: number) => {
+        arr[i] += r.total;
+      });
+    });
+
+    return Array.from(map.entries()).map(([dep, vals]) => ({
+      dep,
+      vals,
+      totalYear: vals.reduce((a, b) => a + b, 0),
+    }));
+  }, [payroll]);
+
   return (
-    <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
-      <h1>ФОТcast v0.04 (UI upgrade)</h1>
+    <main
+      style={{
+        padding: 40,
+        fontFamily: "Calibri",
+        fontSize: 12,
+        background: "#0f1115",
+        color: "#e6e6e6",
+        minHeight: "100vh",
+      }}
+    >
+      <h1 style={{ color: "#ffffff" }}>ФОТcast v0.05</h1>
 
       <input type="file" onChange={handleFile} />
 
@@ -75,6 +111,7 @@ export default function Home() {
         <select
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
+          style={{ background: "#1a1d24", color: "#fff" }}
         >
           {Array.from({ length: 3 }, (_, i) => new Date().getFullYear() + i).map(
             (y) => (
@@ -107,23 +144,17 @@ export default function Home() {
             style={{
               borderCollapse: "collapse",
               width: "100%",
+              background: "#161a22",
+              color: "#e6e6e6",
             }}
           >
             <thead>
-              <tr style={{ background: "#0abab5", color: "white" }}>
+              <tr style={{ background: "#222836" }}>
                 <th>ФИО</th>
                 <th>Подразделение</th>
 
                 {monthLabels.map((m, i) => (
-                  <th key={"f" + i}>ФОТ {m}</th>
-                ))}
-
-                {monthLabels.map((m, i) => (
-                  <th key={"i" + i}>INS {m}</th>
-                ))}
-
-                {monthLabels.map((m, i) => (
-                  <th key={"t" + i}>TOTAL {m}</th>
+                  <th key={i}>{m}</th> // ❌ убрали TOTAL
                 ))}
               </tr>
             </thead>
@@ -135,33 +166,13 @@ export default function Home() {
                   <td>{p.department}</td>
 
                   {p.rows.map((r: any, i: number) => (
-                    <td key={"f" + i}>{formatMoney(r.fot)}</td>
-                  ))}
-
-                  {p.rows.map((r: any, i: number) => (
-                    <td key={"i" + i}>{formatMoney(r.ins)}</td>
-                  ))}
-
-                  {/* 💥 VISUAL UPGRADE ONLY HERE */}
-                  {p.rows.map((r: any, i: number) => (
-                    <td key={"t" + i} style={{ minWidth: 120 }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 2,
-                        }}
-                      >
+                    <td key={i}>
+                      <div style={{ display: "flex", flexDirection: "column" }}>
                         <div style={{ fontWeight: 600 }}>
                           {formatMoney(r.total)}
                         </div>
-
                         <div style={{ fontSize: 10, opacity: 0.7 }}>
-                          INS: {formatMoney(r.ins)}
-                        </div>
-
-                        <div style={{ fontSize: 10, opacity: 0.7 }}>
-                          FOT: {formatMoney(r.fot)}
+                          {formatMoney(r.ins)} / {formatMoney(r.fot)}
                         </div>
                       </div>
                     </td>
@@ -176,9 +187,17 @@ export default function Home() {
       {/* ================= HEADCOUNT ================= */}
       {tab === "headcount" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
-          <table border={1} cellPadding={6}>
+          <table
+            border={1}
+            cellPadding={6}
+            style={{
+              borderCollapse: "collapse",
+              background: "#161a22",
+              color: "#e6e6e6",
+            }}
+          >
             <thead>
-              <tr style={{ background: "#0abab5", color: "white" }}>
+              <tr style={{ background: "#222836" }}>
                 <th>Департамент</th>
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
@@ -197,6 +216,37 @@ export default function Home() {
               ))}
             </tbody>
           </table>
+
+          {/* 💥 SUMMARY BLOCK */}
+          <div style={{ marginTop: 40 }}>
+            <h3>Summary by Department</h3>
+
+            <table
+              border={1}
+              cellPadding={6}
+              style={{
+                borderCollapse: "collapse",
+                width: "60%",
+                background: "#161a22",
+              }}
+            >
+              <thead>
+                <tr style={{ background: "#222836" }}>
+                  <th>Department</th>
+                  <th>Total Year Cost</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {deptSummary.map((d, i) => (
+                  <tr key={i}>
+                    <td>{d.dep}</td>
+                    <td>{formatMoney(d.totalYear)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </main>
