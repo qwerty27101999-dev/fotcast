@@ -63,7 +63,7 @@ export default function Home() {
 
   return (
     <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
-      <h1>ФОТcast v0.04</h1>
+      <h1>ФОТcast v0.05 (HR + Finance split model)</h1>
 
       <input type="file" onChange={handleFile} />
 
@@ -78,11 +78,22 @@ export default function Home() {
             </option>
           ))}
         </select>
+
+        <button
+          onClick={() => exportPayroll(payroll, monthLabels, year)}
+          style={{ marginLeft: 10 }}
+        >
+          Export
+        </button>
       </div>
 
       <div style={{ marginTop: 20 }}>
-        <button onClick={() => setTab("payroll")}>Payroll</button>
-        <button onClick={() => setTab("headcount")}>Headcount</button>
+        <button onClick={() => setTab("payroll")}>
+          Payroll (money)
+        </button>
+        <button onClick={() => setTab("headcount")}>
+          Headcount (HR)
+        </button>
       </div>
 
       {/* PAYROLL */}
@@ -95,13 +106,15 @@ export default function Home() {
                 <th>Подразделение</th>
 
                 {monthLabels.map((m, i) => (
-                  <th key={i}>ФОТ {m}</th>
+                  <th key={"f" + i}>ФОТ {m}</th>
                 ))}
+
                 {monthLabels.map((m, i) => (
-                  <th key={i}>INS {m}</th>
+                  <th key={"i" + i}>INS {m}</th>
                 ))}
+
                 {monthLabels.map((m, i) => (
-                  <th key={i}>TOTAL {m}</th>
+                  <th key={"t" + i}>TOTAL {m}</th>
                 ))}
               </tr>
             </thead>
@@ -113,15 +126,15 @@ export default function Home() {
                   <td>{p.department}</td>
 
                   {p.rows.map((r: any, i: number) => (
-                    <td key={"f"+i}>{r.fot}</td>
+                    <td key={"f" + i}>{r.fot}</td>
                   ))}
 
                   {p.rows.map((r: any, i: number) => (
-                    <td key={"i"+i}>{r.ins}</td>
+                    <td key={"i" + i}>{r.ins}</td>
                   ))}
 
                   {p.rows.map((r: any, i: number) => (
-                    <td key={"t"+i}>{r.total}</td>
+                    <td key={"t" + i}>{r.total}</td>
                   ))}
                 </tr>
               ))}
