@@ -217,7 +217,7 @@ export default function Home() {
       <style jsx global>{`
         .app {
           padding: 40px;
-          font-family: "Century Gothic", sans-serif;
+          font-family: "Roboto", sans-serif;
           font-size: 12px;
           background: #fff;
           color: #000;
@@ -226,7 +226,7 @@ export default function Home() {
         .table {
           border-collapse: collapse;
           width: 100%;
-          font-family: "Century Gothic", sans-serif;
+          font-family: "Roboto", sans-serif;
           font-size: 12px;
         }
 
