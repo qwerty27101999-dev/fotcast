@@ -77,27 +77,27 @@ export default function Home() {
           continue;
         }
 
-        const monthFOT = salary;
+        const monthФОТ = salary;
 
         const prev = cumulative;
         const remainingCap = Math.max(CAP - prev, 0);
 
         let insurance = 0;
 
-        if (remainingCap >= monthFOT) {
-          insurance = monthFOT * RATE_LOW;
+        if (remainingCap >= monthФОТ) {
+          insurance = monthФОТ * RATE_LOW;
         } else {
           insurance =
             remainingCap * RATE_LOW +
-            (monthFOT - remainingCap) * RATE_HIGH;
+            (monthФОТ - remainingCap) * RATE_HIGH;
         }
 
-        cumulative += monthFOT;
+        cumulative += monthФОТ;
 
         rows.push({
-          fot: monthFOT,
+          fot: monthФОТ,
           ins: Math.round(insurance),
-          total: monthFOT + Math.round(insurance),
+          total: monthФОТ + Math.round(insurance),
         });
       }
 
@@ -137,7 +137,7 @@ export default function Home() {
       };
 
       p.rows.forEach((r: any, i: number) => {
-        row[`FOT_${monthLabels[i]}`] = r.fot;
+        row[`ФОТ_${monthLabels[i]}`] = r.fot;
         row[`INS_${monthLabels[i]}`] = r.ins;
         row[`TOTAL_${monthLabels[i]}`] = r.total;
       });
@@ -151,12 +151,12 @@ export default function Home() {
       "PAYROLL"
     );
 
-    XLSX.writeFile(wb, `FOTcast_${year}.xlsx`);
+    XLSX.writeFile(wb, `ФОТcast_${year}.xlsx`);
   };
 
   return (
     <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
-      <h1>FOTcast v0.03 (FLAT GRID)</h1>
+      <h1>ФОТcast v0.03 (FLAT GRID)</h1>
 
       <input type="file" onChange={handleFile} />
 
@@ -196,7 +196,7 @@ export default function Home() {
                 <th>Подразделение</th>
 
                 {monthLabels.map((m, i) => (
-                  <th key={"f"+i}>FOT {m}</th>
+                  <th key={"f"+i}>ФОТ {m}</th>
                 ))}
                 {monthLabels.map((m, i) => (
                   <th key={"i"+i}>INS {m}</th>
