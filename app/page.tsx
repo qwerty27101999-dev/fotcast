@@ -4,7 +4,7 @@
   .table {
     border-collapse: collapse;
     width: 100%;
-    font-family: "Century Gothic", sans-serif;
+    font-family: "Calibri", sans-serif;
     font-size: 12px;
   }
 
