@@ -14,27 +14,21 @@ export default function Home() {
 
   const STORAGE_PREFIX = "fotcast_user_";
 
-  // 👤 USER
   const [activeUser, setActiveUser] = useState("");
-
-  // 📦 DATA
   const [data, setData] = useState<any[]>([]);
   const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
-  // 🎯 EXCEL-LIKE FILTERS (multi-select per column)
-  const [filters, setFilters] = useState<{
-    department: string[];
-    name: string[];
-  }>({
-    department: [],
-    name: [],
+  // Excel-like filters (dropdown multi-select)
+  const [filters, setFilters] = useState({
+    department: [] as string[],
+    name: [] as string[],
   });
 
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(v);
 
-  // ================= LOAD =================
+  // ================= MEMORY LOAD =================
   useEffect(() => {
     const last = localStorage.getItem("fotcast_last_user");
     if (last) setActiveUser(last);
@@ -50,12 +44,10 @@ export default function Home() {
       setData(parsed.data || []);
       setYear(parsed.year || new Date().getFullYear());
       setTab(parsed.tab || "payroll");
-    } else {
-      setData([]);
     }
   }, [activeUser]);
 
-  // ================= FILE =================
+  // ================= FILE LOAD =================
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -71,6 +63,25 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
+  // ================= SAVE / CLEAR =================
+  const saveMemory = () => {
+    if (!activeUser) return;
+
+    localStorage.setItem(
+      STORAGE_PREFIX + activeUser,
+      JSON.stringify({ data, year, tab })
+    );
+
+    localStorage.setItem("fotcast_last_user", activeUser);
+  };
+
+  const clearMemory = () => {
+    if (!activeUser) return;
+
+    localStorage.removeItem(STORAGE_PREFIX + activeUser);
+    setData([]);
+  };
+
   // ================= MONTHS =================
   const months = useMemo(
     () => Array.from({ length: 12 }, (_, i) => new Date(year, i, 1)),
@@ -82,16 +93,18 @@ export default function Home() {
     [months]
   );
 
-  // ================= FILTER OPTIONS =================
-  const departmentOptions = useMemo(() => {
-    return Array.from(new Set(data.map((d: any) => d.department || "—")));
-  }, [data]);
+  // ================= OPTIONS =================
+  const departmentOptions = useMemo(
+    () => Array.from(new Set(data.map((d: any) => d.department || "—"))),
+    [data]
+  );
 
-  const nameOptions = useMemo(() => {
-    return Array.from(new Set(data.map((d: any) => d.name)));
-  }, [data]);
+  const nameOptions = useMemo(
+    () => Array.from(new Set(data.map((d: any) => d.name))),
+    [data]
+  );
 
-  // ================= APPLY FILTERS =================
+  // ================= FILTER APPLY =================
   const filteredData = useMemo(() => {
     return data.filter((emp: any) => {
       const dep = emp.department || "—";
@@ -101,7 +114,8 @@ export default function Home() {
         filters.department.includes(dep);
 
       const nameOk =
-        filters.name.length === 0 || filters.name.includes(emp.name);
+        filters.name.length === 0 ||
+        filters.name.includes(emp.name);
 
       return depOk && nameOk;
     });
@@ -128,8 +142,8 @@ export default function Home() {
 
   const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 
-  // ================= FILTER UI =================
-  const toggleFilter = (key: "department" | "name", value: string) => {
+  // ================= FILTER TOGGLE =================
+  const toggle = (key: "department" | "name", value: string) => {
     setFilters((prev) => {
       const exists = prev[key].includes(value);
 
@@ -145,28 +159,30 @@ export default function Home() {
   const clearFilters = () =>
     setFilters({ department: [], name: [] });
 
+  // ================= UI =================
   return (
     <main className="app">
-      <h1>ФОТcast v0.10</h1>
+      <h1>ФОТcast v0.11</h1>
 
       <input type="file" onChange={handleFile} />
 
+      {/* USER ACTIONS */}
+      <div style={{ marginTop: 10 }}>
+        <button onClick={saveMemory}>Save</button>
+        <button onClick={clearMemory} style={{ marginLeft: 10 }}>
+          Clear
+        </button>
+      </div>
+
       {/* CONTROLS */}
       <div style={{ marginTop: 20 }}>
-        <select
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-        >
-          {Array.from({ length: 3 }, (_, i) =>
-            new Date().getFullYear() + i
-          ).map((y) => (
-            <option key={y}>{y}</option>
-          ))}
+        <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
+          {Array.from({ length: 3 }, (_, i) => new Date().getFullYear() + i).map(
+            (y) => (
+              <option key={y}>{y}</option>
+            )
+          )}
         </select>
-
-        <button onClick={clearFilters} style={{ marginLeft: 10 }}>
-          Clear Filters
-        </button>
 
         <button
           onClick={() => exportPayroll(payroll, monthLabels, year)}
@@ -174,20 +190,22 @@ export default function Home() {
         >
           Export
         </button>
+
+        <button onClick={clearFilters} style={{ marginLeft: 10 }}>
+          Clear Filters
+        </button>
       </div>
 
-      {/* FILTER PANEL (Excel style) */}
+      {/* EXCEL-LIKE FILTER ROW */}
       <div style={{ marginTop: 20 }}>
-        <b>Filters:</b>
-
-        <div style={{ marginTop: 10 }}>
-          <div>Department</div>
+        <div>
+          <b>Department filter:</b>
           {departmentOptions.map((d) => (
-            <label key={d} style={{ marginRight: 10 }}>
+            <label key={d} style={{ marginLeft: 10 }}>
               <input
                 type="checkbox"
                 checked={filters.department.includes(d)}
-                onChange={() => toggleFilter("department", d)}
+                onChange={() => toggle("department", d)}
               />
               {d}
             </label>
@@ -195,13 +213,13 @@ export default function Home() {
         </div>
 
         <div style={{ marginTop: 10 }}>
-          <div>Name</div>
+          <b>Name filter:</b>
           {nameOptions.map((n) => (
-            <label key={n} style={{ marginRight: 10 }}>
+            <label key={n} style={{ marginLeft: 10 }}>
               <input
                 type="checkbox"
                 checked={filters.name.includes(n)}
-                onChange={() => toggleFilter("name", n)}
+                onChange={() => toggle("name", n)}
               />
               {n}
             </label>
@@ -223,9 +241,11 @@ export default function Home() {
               <tr>
                 <th>ФИО</th>
                 <th>Подразделение</th>
+
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
+
                 <th>TOTAL</th>
               </tr>
             </thead>
@@ -257,6 +277,7 @@ export default function Home() {
             <thead>
               <tr>
                 <th>Департамент</th>
+
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
