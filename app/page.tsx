@@ -4,26 +4,20 @@ import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 
 export default function Home() {
-  // 📦 data
   const [data, setData] = useState<any[]>([]);
 
-  // 📅 year
   const CURRENT_YEAR = new Date().getFullYear();
   const [year, setYear] = useState(CURRENT_YEAR);
 
-  // 🔀 tabs
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
-  // 💰 insurance params
   const CAP = 2_979_000;
   const RATE_LOW = 0.3;
   const RATE_HIGH = 0.151;
 
-  // 💸 money format
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(v);
 
-  // 📅 Excel date parser
   const parseExcelDate = (value: any) => {
     if (!value) return null;
     if (typeof value === "number") {
@@ -33,7 +27,6 @@ export default function Home() {
     return isNaN(d.getTime()) ? null : d;
   };
 
-  // 📂 upload
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -53,12 +46,15 @@ export default function Home() {
     return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
   }, [year]);
 
-  // 👥 departments
+  const monthLabels = months.map(m =>
+    m.toLocaleString("ru", { month: "short" })
+  );
+
   const departments = useMemo(() => {
     return Array.from(new Set(data.map(d => d.department || "—")));
   }, [data]);
 
-  // 🧠 payroll engine (correct cap logic)
+  // 🧠 ENGINE
   const payroll = useMemo(() => {
     return data.map(emp => {
       const hire = parseExcelDate(emp.hire_date);
@@ -66,25 +62,24 @@ export default function Home() {
 
       let cumulative = 0;
 
-      const fot: number[] = [];
-      const ins: number[] = [];
-      const total: number[] = [];
+      const rows: any[] = [];
 
       for (let i = 0; i < 12; i++) {
         const m = months[i];
         const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
 
         if (!hire || hire > monthEnd) {
-          fot.push(0);
-          ins.push(0);
-          total.push(0);
+          rows.push({
+            fot: 0,
+            ins: 0,
+            total: 0,
+          });
           continue;
         }
 
         const monthFOT = salary;
 
         const prev = cumulative;
-
         const remainingCap = Math.max(CAP - prev, 0);
 
         let insurance = 0;
@@ -99,17 +94,17 @@ export default function Home() {
 
         cumulative += monthFOT;
 
-        fot.push(monthFOT);
-        ins.push(Math.round(insurance));
-        total.push(monthFOT + Math.round(insurance));
+        rows.push({
+          fot: monthFOT,
+          ins: Math.round(insurance),
+          total: monthFOT + Math.round(insurance),
+        });
       }
 
       return {
         name: emp.name,
         department: emp.department || "—",
-        fot,
-        ins,
-        total,
+        rows,
       };
     });
   }, [data, months]);
@@ -132,7 +127,6 @@ export default function Home() {
     });
   }, [data, months, departments]);
 
-  // 📤 export
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
 
@@ -142,10 +136,10 @@ export default function Home() {
         Подразделение: p.department,
       };
 
-      months.forEach((_, i) => {
-        row[`FOT_${i + 1}`] = p.fot[i];
-        row[`INS_${i + 1}`] = p.ins[i];
-        row[`TOTAL_${i + 1}`] = p.total[i];
+      p.rows.forEach((r: any, i: number) => {
+        row[`FOT_${monthLabels[i]}`] = r.fot;
+        row[`INS_${monthLabels[i]}`] = r.ins;
+        row[`TOTAL_${monthLabels[i]}`] = r.total;
       });
 
       return row;
@@ -162,17 +156,12 @@ export default function Home() {
 
   return (
     <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
-      <h1>FOTcast v0.02 FIX GRID</h1>
+      <h1>FOTcast v0.03 (FLAT GRID)</h1>
 
-      {/* upload */}<input type="file" onChange={handleFile} />
+      <input type="file" onChange={handleFile} />
 
-      {/* controls */}
       <div style={{ marginTop: 20 }}>
-        <select
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-        >
-          {Array.from({ length: 3 }, (_, i) => CURRENT_YEAR + i).map(y => (
+        <select value={year} onChange={(e) => setYear(Number(e.target.value))}>{Array.from({ length: 3 }, (_, i) => CURRENT_YEAR + i).map(y => (
             <option key={y} value={y}>{y}</option>
           ))}
         </select>
@@ -182,49 +171,38 @@ export default function Home() {
         </button>
       </div>
 
-      {/* tabs */}
       <div style={{ marginTop: 20 }}>
         <button onClick={() => setTab("payroll")}>Payroll</button>
         <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
-      {/* 💰 PAYROLL TABLE (FIXED GRID) */}
+      {/* 💰 PAYROLL */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table
             border={1}
             cellPadding={6}
             style={{
-              tableLayout: "fixed",
-              width: "100%",
               borderCollapse: "collapse",
+              tableLayout: "auto",
+              width: "100%",
+              fontFamily: "Calibri",
+              fontSize: 12,
             }}
           >
             <thead>
               <tr style={{ background: "#0abab5", color: "white" }}>
-                <th rowSpan={2}>ФИО</th>
-                <th rowSpan={2}>Подразделение</th>
+                <th>ФИО</th>
+                <th>Подразделение</th>
 
-                <th colSpan={12}>FOT</th>
-                <th colSpan={12}>INS</th>
-                <th colSpan={12}>TOTAL</th>
-              </tr>
-
-              <tr style={{ background: "#0abab5", color: "white" }}>
-                {months.map((m, i) => (
-                  <th key={"f"+i}>
-                    {m.toLocaleString("ru", { month: "short" })}
-                  </th>
+                {monthLabels.map((m, i) => (
+                  <th key={"f"+i}>FOT {m}</th>
                 ))}
-                {months.map((m, i) => (
-                  <th key={"i"+i}>
-                    {m.toLocaleString("ru", { month: "short" })}
-                  </th>
+                {monthLabels.map((m, i) => (
+                  <th key={"i"+i}>INS {m}</th>
                 ))}
-                {months.map((m, i) => (
-                  <th key={"t"+i}>
-                    {m.toLocaleString("ru", { month: "short" })}
-                  </th>
+                {monthLabels.map((m, i) => (
+                  <th key={"t"+i}>TOTAL {m}</th>
                 ))}
               </tr>
             </thead>
@@ -235,16 +213,16 @@ export default function Home() {
                   <td>{p.name}</td>
                   <td>{p.department}</td>
 
-                  {p.fot.map((v, i) => (
-                    <td key={"f"+i}>{formatMoney(v)}</td>
+                  {p.rows.map((r: any, i: number) => (
+                    <td key={"f"+i}>{formatMoney(r.fot)}</td>
                   ))}
 
-                  {p.ins.map((v, i) => (
-                    <td key={"i"+i}>{formatMoney(v)}</td>
+                  {p.rows.map((r: any, i: number) => (
+                    <td key={"i"+i}>{formatMoney(r.ins)}</td>
                   ))}
 
-                  {p.total.map((v, i) => (
-                    <td key={"t"+i}>{formatMoney(v)}</td>
+                  {p.rows.map((r: any, i: number) => (
+                    <td key={"t"+i}>{formatMoney(r.total)}</td>
                   ))}
                 </tr>
               ))}
@@ -260,8 +238,8 @@ export default function Home() {
             <thead>
               <tr style={{ background: "#0abab5", color: "white" }}>
                 <th>Департамент</th>
-                {months.map((_, i) => (
-                  <th key={i}>{i + 1}</th>
+                {monthLabels.map((m, i) => (
+                  <th key={i}>{m}</th>
                 ))}
               </tr>
             </thead>
