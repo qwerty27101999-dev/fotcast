@@ -62,6 +62,7 @@ export default function Home() {
     [data, months]
   );
 
+  // 📊 DEPARTMENT SUMMARY (MONTHLY + YEAR)
   const deptSummary = useMemo(() => {
     const map = new Map<string, number[]>();
 
@@ -79,9 +80,10 @@ export default function Home() {
       });
     });
 
-    return Array.from(map.entries()).map(([dep, vals]) => ({
+    return Array.from(map.entries()).map(([dep, months]) => ({
       dep,
-      totalYear: vals.reduce((a, b) => a + b, 0),
+      months,
+      totalYear: months.reduce((a, b) => a + b, 0),
     }));
   }, [payroll]);
 
@@ -91,7 +93,8 @@ export default function Home() {
 
       <input type="file" onChange={handleFile} />
 
-      <div className="toolbar">
+      {/* YEAR */}
+      <div style={{ marginTop: 20 }}>
         <select
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
@@ -105,24 +108,29 @@ export default function Home() {
           )}
         </select>
 
-        <button onClick={() => exportPayroll(payroll, monthLabels, year)}>
+        <button
+          onClick={() => exportPayroll(payroll, monthLabels, year)}
+          style={{ marginLeft: 10 }}
+        >
           Export
         </button>
       </div>
 
-      <div className="tabs">
+      {/* TABS */}
+      <div style={{ marginTop: 20 }}>
         <button onClick={() => setTab("payroll")}>Payroll</button>
         <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
-      {/* PAYROLL */}
+      {/* ================= PAYROLL ================= */}
       {tab === "payroll" && (
-        <div className="table-wrap">
+        <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table className="table">
             <thead>
               <tr>
                 <th>ФИО</th>
                 <th>Подразделение</th>
+
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
@@ -137,11 +145,9 @@ export default function Home() {
 
                   {p.rows.map((r: any, i: number) => (
                     <td key={i}>
-                      <div className="cell">
-                        <div className="main">
-                          {formatMoney(r.total)}
-                        </div>
-                        <div className="sub">
+                      <div>
+                        <div>{formatMoney(r.total)}</div>
+                        <div style={{ fontSize: 10, opacity: 0.7 }}>
                           INS {formatMoney(r.ins)} | FOT {formatMoney(r.fot)}
                         </div>
                       </div>
@@ -152,13 +158,19 @@ export default function Home() {
             </tbody>
           </table>
 
-          <div className="summary">
-            <h3>Summary by Department</h3>
+          {/* ================= SUMMARY BY DEPARTMENT ================= */}
+          <div style={{ marginTop: 40 }}>
+            <h3>Summary by Department (Monthly)</h3>
 
             <table className="table">
               <thead>
                 <tr>
                   <th>Department</th>
+
+                  {monthLabels.map((m, i) => (
+                    <th key={i}>{m}</th>
+                  ))}
+
                   <th>Total</th>
                 </tr>
               </thead>
@@ -167,6 +179,11 @@ export default function Home() {
                 {deptSummary.map((d: any, i: number) => (
                   <tr key={i}>
                     <td>{d.dep}</td>
+
+                    {d.months.map((v: number, j: number) => (
+                      <td key={j}>{formatMoney(v)}</td>
+                    ))}
+
                     <td>{formatMoney(d.totalYear)}</td>
                   </tr>
                 ))}
@@ -176,13 +193,14 @@ export default function Home() {
         </div>
       )}
 
-      {/* HEADCOUNT */}
+      {/* ================= HEADCOUNT ================= */}
       {tab === "headcount" && (
-        <div className="table-wrap">
+        <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table className="table">
             <thead>
               <tr>
                 <th>Департамент</th>
+
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
@@ -193,6 +211,7 @@ export default function Home() {
               {headcount.map((r: any, i: number) => (
                 <tr key={i}>
                   <td>{r.dep}</td>
+
                   {months.map((_, j) => (
                     <td key={j}>{r[j]}</td>
                   ))}
@@ -203,61 +222,37 @@ export default function Home() {
         </div>
       )}
 
+      {/* GLOBAL STYLE */}
       <style jsx global>{`
         .app {
           padding: 40px;
           font-family: "Century Gothic", sans-serif;
           font-size: 12px;
-        }
-
-        .toolbar {
-          margin-top: 20px;
-          display: flex;
-          gap: 10px;
-        }
-
-        .tabs {
-          margin-top: 20px;
-          display: flex;
-          gap: 10px;
-        }
-
-        .table-wrap {
-          margin-top: 30px;
-          overflow-x: auto;
+          background: #fff;
+          color: #000;
         }
 
         .table {
           border-collapse: collapse;
           width: 100%;
+          font-family: "Century Gothic", sans-serif;
+          font-size: 12px;
         }
 
         .table th {
           background: #1a2a42;
-          color: white;
+          color: #fff;
           font-weight: 400;
+          text-align: left;
           padding: 6px 10px;
           border: 1px solid #d0d7e2;
-          text-align: left;
         }
 
         .table td {
           border: 1px solid #d0d7e2;
           padding: 6px 10px;
+          text-align: left;
           vertical-align: top;
-        }
-
-        .cell .main {
-          font-weight: 400;
-        }
-
-        .cell .sub {
-          font-size: 10px;
-          opacity: 0.7;
-        }
-
-        .summary {
-          margin-top: 40px;
         }
       `}</style>
     </main>
