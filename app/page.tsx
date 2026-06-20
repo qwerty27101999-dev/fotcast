@@ -154,14 +154,14 @@ export default function Home() {
 
   return (
     <main className="app">
-      <h1>ФОТcast v0.14</h1>
+      <h1>ФОТкаст (build 0.1)</h1>
 
       <input type="file" onChange={handleFile} />
 
       <div style={{ marginTop: 10 }}>
-        <button onClick={saveMemory}>Save</button>
+        <button onClick={saveMemory}>Сохранить</button>
         <button onClick={clearMemory} style={{ marginLeft: 10 }}>
-          Clear
+          Очистить
         </button>
       </div>
 
