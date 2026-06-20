@@ -153,7 +153,7 @@ export default function Home() {
 
   return (
     <main className="app">
-      <h1>ФОТcast v0.08</h1>
+      <h1>ФОТcast v0.09</h1>
 
       {/* USER */}
       <div style={{ marginBottom: 20 }}>
@@ -231,9 +231,11 @@ export default function Home() {
               <tr>
                 <th>ФИО</th>
                 <th>Подразделение</th>
+
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
+
                 <th>TOTAL</th>
               </tr>
             </thead>
@@ -248,7 +250,14 @@ export default function Home() {
                     <td>{p.department}</td>
 
                     {p.rows.map((r: any, j: number) => (
-                      <td key={j}>{formatMoney(r.total)}</td>
+                      <td key={j}>
+                        <div>
+                          <div>{formatMoney(r.total)}</div>
+                          <div style={{ fontSize: 10, opacity: 0.7 }}>
+                            INS: {formatMoney(r.ins)} | FOT: {formatMoney(r.fot)}
+                          </div>
+                        </div>
+                      </td>
                     ))}
 
                     <td style={{ fontWeight: 600 }}>
@@ -296,29 +305,21 @@ export default function Home() {
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
-
-                <th>TOTAL</th>
               </tr>
             </thead>
 
             <tbody>
-              {headcount.map((r: any, i: number) => {
-                const rowTotal = sum(months.map((_, j) => r[j]));
+              {headcount.map((r: any, i: number) => (
+                <tr key={i}>
+                  <td>{r.dep}</td>
 
-                return (
-                  <tr key={i}>
-                    <td>{r.dep}</td>
+                  {months.map((_, j) => (
+                    <td key={j}>{r[j]}</td>
+                  ))}
+                </tr>
+              ))}
 
-                    {months.map((_, j) => (
-                      <td key={j}>{r[j]}</td>
-                    ))}
-
-                    <td style={{ fontWeight: 600 }}>{rowTotal}</td>
-                  </tr>
-                );
-              })}
-
-              {/* TOTAL ROW */}
+              {/* TOTAL ROW ONLY */}
               <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
                 <td>TOTAL</td>
 
@@ -327,14 +328,6 @@ export default function Home() {
                     {sum(headcount.map((r: any) => r[j]))}
                   </td>
                 ))}
-
-                <td>
-                  {sum(
-                    headcount.map((r: any) =>
-                      sum(months.map((_, j) => r[j]))
-                    )
-                  )}
-                </td>
               </tr>
             </tbody>
           </table>
