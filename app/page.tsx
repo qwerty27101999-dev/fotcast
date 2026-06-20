@@ -277,42 +277,42 @@ export default function Home() {
         </div>
       )}
 
-      {/* HEADCOUNT */}
-      {tab === "headcount" && (
-        <div style={{ marginTop: 30, overflowX: "auto" }}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Департамент</th>
+{/* ================= HEADCOUNT ================= */}
+{tab === "headcount" && (
+  <div style={{ marginTop: 30, overflowX: "auto" }}>
+    <table className="table">
+      <thead>
+        <tr>
+          <th>Департамент</th>
 
-                {monthLabels.map((m, i) => (
-                  <th key={i}>{m}</th>
-                ))}
-              </tr>
-            </thead>
+          {monthLabels.map((m, i) => (
+            <th key={i}>{m}</th>
+          ))}
+        </tr>
+      </thead>
 
-            <tbody>
-              {headcount.map((r: any, i: number) => (
-                <tr key={i}>
-                  <td>{r.dep}</td>
+      <tbody>
+        {headcount.map((r: any, i: number) => (
+          <tr key={i}>
+            <td>{r.dep}</td>
 
-                  {months.map((_, j) => (
-                    <td key={j}>{r[j]}</td>
-                  ))}
-                </tr>
-              ))}
+            {months.map((_, j) => (
+              <td key={j}>{r[j]}</td>
+            ))}
+          </tr>
+        ))}
 
-              <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
-                <td>TOTAL</td>
+        <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
+          <td>TOTAL</td>
 
-                {headcountTotals.map((v, i) => (
-                  <td key={i}>{v}</td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+          {headcountTotals.map((v, i) => (
+            <td key={i}>{v}</td>
+          ))}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+)}
 
       <style jsx global>{`
         .app {
