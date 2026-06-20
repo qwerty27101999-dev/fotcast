@@ -20,45 +20,34 @@ export function buildPayroll(
     const rows: any[] = [];
 
     for (let i = 0; i < months.length; i++) {
-      const monthStart = new Date(
-        months[i].getFullYear(),
-        months[i].getMonth(),
-        1
-      );
+      const m = months[i];
 
-      const monthEnd = new Date(
-        months[i].getFullYear(),
-        months[i].getMonth() + 1,
-        0
-      );
+      const monthStart = new Date(m.getFullYear(), m.getMonth(), 1);
+      const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
 
-      // 🧠 ACTIVE LOGIC (FIXED BOUNDARY)
+      // 💰 PAYROLL LOGIC: worked at least 1 day in month
       const active =
         hire &&
         hire <= monthEnd &&
-        (!termination || termination > monthEnd);
+        (!termination || termination >= monthEnd)
 
       if (!active) {
-        rows.push({
-          fot: 0,
-          ins: 0,
-          total: 0,
-        });
+        rows.push({ fot: 0, ins: 0, total: 0 });
         continue;
       }
 
       const fot = salary;
 
-      const remaining = Math.max(CAP - cumulative, 0);
+      const remainingCap = Math.max(CAP - cumulative, 0);
 
       let ins = 0;
 
-      if (remaining >= fot) {
+      if (remainingCap >= fot) {
         ins = fot * RATE_LOW;
       } else {
         ins =
-          remaining * RATE_LOW +
-          (fot - remaining) * RATE_HIGH;
+          remainingCap * RATE_LOW +
+          (fot - remainingCap) * RATE_HIGH;
       }
 
       cumulative += fot;
