@@ -24,3 +24,46 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* ===== BUTTON SYSTEM ===== */
+
+.btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #d0d7e2;
+  background: #fff;
+  font-size: 12px;
+  font-family: "Century Gothic", sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn:hover {
+  background: #f5f7fa;
+  border-color: #b8c4d6;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: #1a2a42;
+  color: #fff;
+  border: 1px solid #1a2a42;
+}
+
+.btn-primary:hover {
+  background: #243a5a;
+}
+
+.btn-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #1a2a42;
+}
+
+.btn-tab-active {
+  background: #1a2a42;
+  color: white;
+  border-radius: 8px;
+}
