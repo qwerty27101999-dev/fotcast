@@ -18,6 +18,7 @@ export default function Home() {
   const [data, setData] = useState<any[]>([]);
   const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
+  const [fileName, setFileName] = useState("");
 
   const [filters, setFilters] = useState({
     department: "ALL",
@@ -49,6 +50,9 @@ export default function Home() {
 
   const handleFile = (e: any) => {
     const file = e.target.files[0];
+    if (file) {
+  setFileName(file.name);
+}
     const reader = new FileReader();
 
     reader.onload = (event: any) => {
@@ -156,7 +160,21 @@ export default function Home() {
     <main className="app">
       <h1>ФОТкаст (build 0.1)</h1>
 
-      <input type="file" onChange={handleFile} />
+      <div style={{ marginTop: 10 }}>
+  <label className="btn btn-primary">
+    Загрузить Excel
+
+    <input
+      type="file"
+      onChange={handleFile}
+      style={{ display: "none" }}
+    />
+  </label>
+
+  <span style={{ marginLeft: 12 }}>
+    {fileName || "Файл не выбран"}
+  </span>
+</div>
 
       <div style={{ marginTop: 10 }}>
         <button className="btn" onClick={saveMemory}>
