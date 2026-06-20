@@ -18,7 +18,6 @@ export default function Home() {
   const RATE_LOW = 0.3;
   const RATE_HIGH = 0.151;
 
-  // 📥 FILE IMPORT
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -34,7 +33,6 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // 📅 MONTHS (depends on year)
   const months = useMemo(() => {
     return Array.from(
       { length: 12 },
@@ -48,7 +46,6 @@ export default function Home() {
     );
   }, [months]);
 
-  // 💰 PAYROLL ENGINE
   const payroll = useMemo(() => {
     return buildPayroll(
       data,
@@ -60,86 +57,51 @@ export default function Home() {
     );
   }, [data, months, year]);
 
-  // 👥 HEADCOUNT ENGINE
-  const headcountMatrix = useMemo(() => {
-    return buildHeadcount(
-      data,
-      months,
-      parseExcelDate
-    );
+  const headcount = useMemo(() => {
+    return buildHeadcount(data, months, parseExcelDate);
   }, [data, months, year]);
-
-  // 📤 EXPORT
-  const handleExport = () =>
-    exportPayroll(payroll, monthLabels, year);
 
   return (
     <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
-      <h1>ФОТcast v0.03 (stable build)</h1>
+      <h1>ФОТcast v0.04</h1>
 
-      {/* 📥 upload */}
       <input type="file" onChange={handleFile} />
 
-      {/* 🧠 controls */}
       <div style={{ marginTop: 20 }}>
         <select
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
         >
-          {Array.from(
-            { length: 3 },
-            (_, i) => CURRENT_YEAR + i
-          ).map((y) => (
+          {Array.from({ length: 3 }, (_, i) => CURRENT_YEAR + i).map(y => (
             <option key={y} value={y}>
               {y}
             </option>
           ))}
         </select>
-
-        <button onClick={handleExport} style={{ marginLeft: 10 }}>
-          Export
-        </button>
       </div>
 
-      {/* tabs */}
       <div style={{ marginTop: 20 }}>
-        <button onClick={() => setTab("payroll")}>
-          Payroll
-        </button>
-        <button onClick={() => setTab("headcount")}>
-          Headcount
-        </button>
+        <button onClick={() => setTab("payroll")}>Payroll</button>
+        <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
-      {/* ================= PAYROLL ================= */}
+      {/* PAYROLL */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
-          <table
-            key={year}
-            border={1}
-            cellPadding={6}
-            style={{
-              borderCollapse: "collapse",
-              width: "100%",
-              fontFamily: "Calibri",
-              fontSize: 12,
-            }}
-          >
+          <table border={1} cellPadding={6}>
             <thead>
-              <tr style={{ background: "#0abab5", color: "white" }}>
+              <tr>
                 <th>ФИО</th>
                 <th>Подразделение</th>
 
                 {monthLabels.map((m, i) => (
-                  <th key={"f" + i}>ФОТ {m}</th>
+                  <th key={i}>ФОТ {m}</th>
                 ))}
-
                 {monthLabels.map((m, i) => (
-                  <th key={"i" + i}>INS {m}</th>
+                  <th key={i}>INS {m}</th>
                 ))}
-
                 {monthLabels.map((m, i) => (
-                  <th key={"t" + i}>TOTAL {m}</th>
+                  <th key={i}>TOTAL {m}</th>
                 ))}
               </tr>
             </thead>
@@ -151,15 +113,15 @@ export default function Home() {
                   <td>{p.department}</td>
 
                   {p.rows.map((r: any, i: number) => (
-                    <td key={"f" + i}>{r.fot}</td>
+                    <td key={"f"+i}>{r.fot}</td>
                   ))}
 
                   {p.rows.map((r: any, i: number) => (
-                    <td key={"i" + i}>{r.ins}</td>
+                    <td key={"i"+i}>{r.ins}</td>
                   ))}
 
                   {p.rows.map((r: any, i: number) => (
-                    <td key={"t" + i}>{r.total}</td>
+                    <td key={"t"+i}>{r.total}</td>
                   ))}
                 </tr>
               ))}
@@ -168,16 +130,12 @@ export default function Home() {
         </div>
       )}
 
-      {/* ================= HEADCOUNT ================= */}
+      {/* HEADCOUNT */}
       {tab === "headcount" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
-          <table
-            key={"hc" + year}
-            border={1}
-            cellPadding={6}
-          >
+          <table border={1} cellPadding={6}>
             <thead>
-              <tr style={{ background: "#0abab5", color: "white" }}>
+              <tr>
                 <th>Департамент</th>
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
@@ -186,10 +144,9 @@ export default function Home() {
             </thead>
 
             <tbody>
-              {headcountMatrix.map((r: any, i: number) => (
+              {headcount.map((r: any, i: number) => (
                 <tr key={i}>
                   <td>{r.dep}</td>
-
                   {months.map((_, j) => (
                     <td key={j}>{r[j]}</td>
                   ))}
