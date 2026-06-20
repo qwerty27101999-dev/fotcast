@@ -19,7 +19,6 @@ export default function Home() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
-  // 🔥 linked filters (JIRA-like dependency)
   const [filters, setFilters] = useState({
     department: "ALL",
     name: "ALL",
@@ -30,7 +29,6 @@ export default function Home() {
 
   const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 
-  // ================= LOAD USER =================
   useEffect(() => {
     const last = localStorage.getItem("fotcast_last_user");
     if (last) setActiveUser(last);
@@ -49,7 +47,6 @@ export default function Home() {
     }
   }, [activeUser]);
 
-  // ================= FILE =================
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -65,7 +62,6 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  // ================= SAVE / CLEAR =================
   const saveMemory = () => {
     if (!activeUser) return;
 
@@ -83,7 +79,6 @@ export default function Home() {
     setData([]);
   };
 
-  // ================= MONTHS =================
   const months = useMemo(
     () => Array.from({ length: 12 }, (_, i) => new Date(year, i, 1)),
     [year]
@@ -94,35 +89,27 @@ export default function Home() {
     [months]
   );
 
-  // ================= LINKED FILTER OPTIONS =================
   const baseFiltered = useMemo(() => {
     return data.filter((emp: any) => {
       const dep = emp.department || "—";
-      const depOk =
-        filters.department === "ALL" || filters.department === dep;
-
-      return depOk;
+      return filters.department === "ALL" || filters.department === dep;
     });
   }, [data, filters.department]);
 
-  const departmentOptions = useMemo(() => {
-    return Array.from(new Set(data.map((d: any) => d.department || "—")));
-  }, [data]);
+  const departmentOptions = useMemo(
+    () => Array.from(new Set(data.map((d: any) => d.department || "—"))),
+    [data]
+  );
 
-  const nameOptions = useMemo(() => {
-    // 🔥 depends on selected department
-    return Array.from(
-      new Set(baseFiltered.map((d: any) => d.name))
-    );
-  }, [baseFiltered]);
+  const nameOptions = useMemo(
+    () => Array.from(new Set(baseFiltered.map((d: any) => d.name))),
+    [baseFiltered]
+  );
 
-  // ================= FINAL FILTER =================
   const filteredData = useMemo(() => {
     return data.filter((emp: any) => {
-      const dep = emp.department || "—";
-
       const depOk =
-        filters.department === "ALL" || filters.department === dep;
+        filters.department === "ALL" || filters.department === emp.department;
 
       const nameOk =
         filters.name === "ALL" || filters.name === emp.name;
@@ -131,17 +118,8 @@ export default function Home() {
     });
   }, [data, filters]);
 
-  // ================= ENGINE =================
   const payroll = useMemo(
-    () =>
-      buildPayroll(
-        filteredData,
-        months,
-        CAP,
-        RATE_LOW,
-        RATE_HIGH,
-        parseExcelDate
-      ),
+    () => buildPayroll(filteredData, months, CAP, RATE_LOW, RATE_HIGH, parseExcelDate),
     [filteredData, months]
   );
 
@@ -150,7 +128,6 @@ export default function Home() {
     [filteredData, months]
   );
 
-  // ================= TOTALS =================
   const payrollTotals = useMemo(() => {
     const monthly = Array(12).fill(0);
 
@@ -175,14 +152,12 @@ export default function Home() {
     return monthly;
   }, [headcount, months]);
 
-  // ================= UI =================
   return (
     <main className="app">
       <h1>ФОТcast v0.14</h1>
 
       <input type="file" onChange={handleFile} />
 
-      {/* USER ACTIONS */}
       <div style={{ marginTop: 10 }}>
         <button onClick={saveMemory}>Save</button>
         <button onClick={clearMemory} style={{ marginLeft: 10 }}>
@@ -190,12 +165,8 @@ export default function Home() {
         </button>
       </div>
 
-      {/* YEAR */}
       <div style={{ marginTop: 20 }}>
-        <select
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-        >
+        <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
           {Array.from({ length: 3 }, (_, i) => new Date().getFullYear() + i).map(
             (y) => (
               <option key={y}>{y}</option>
@@ -213,56 +184,40 @@ export default function Home() {
 
       {/* FILTERS */}
       <div style={{ marginTop: 20, display: "flex", gap: 20 }}>
-        <div>
-          <label>Department: </label>
-          <select
-            value={filters.department}
-            onChange={(e) =>
-              setFilters((f) => ({
-                ...f,
-                department: e.target.value,
-                name: "ALL", // reset name when dept changes
-              }))
-            }
-          >
-            <option value="ALL">All</option>
-            {departmentOptions.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-        </div>
+        <select
+          value={filters.department}
+          onChange={(e) =>
+            setFilters((f) => ({
+              ...f,
+              department: e.target.value,
+              name: "ALL",
+            }))
+          }
+        >
+          <option value="ALL">All departments</option>
+          {departmentOptions.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
 
-        <div>
-          <label>Name: </label>
-          <select
-            value={filters.name}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, name: e.target.value }))
-            }
-          >
-            <option value="ALL">All</option>
-            {nameOptions.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <button onClick={() => setFilters({ department: "ALL", name: "ALL" })}>
-          Reset filters
-        </button>
+        <select
+          value={filters.name}
+          onChange={(e) =>
+            setFilters((f) => ({ ...f, name: e.target.value }))
+          }
+        >
+          <option value="ALL">All names</option>
+          {nameOptions.map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {/* TABS */}
-      <div style={{ marginTop: 20 }}>
-        <button onClick={() => setTab("payroll")}>Payroll</button>
-        <button onClick={() => setTab("headcount")}>Headcount</button>
-      </div>
-
-      {/* ================= PAYROLL ================= */}
+      {/* PAYROLL */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table className="table">
@@ -286,7 +241,19 @@ export default function Home() {
                   <td>{p.department}</td>
 
                   {p.rows.map((r: any, j: number) => (
-                    <td key={j}>{formatMoney(r.total)}</td>
+                    <td key={j}>
+                      <div>
+                        {/* 🔥 MAIN VALUE */}
+                        <div style={{ fontWeight: 500 }}>
+                          {formatMoney(r.total)}
+                        </div>
+
+                        {/* 🔥 RESTORED BREAKDOWN */}
+                        <div style={{ fontSize: 10, opacity: 0.7 }}>
+                          FOT: {formatMoney(r.fot)} | INS: {formatMoney(r.ins)}
+                        </div>
+                      </div>
+                    </td>
                   ))}
 
                   <td>
@@ -310,7 +277,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ================= HEADCOUNT ================= */}
+      {/* HEADCOUNT */}
       {tab === "headcount" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table className="table">
@@ -335,7 +302,6 @@ export default function Home() {
                 </tr>
               ))}
 
-              {/* 🔥 RESTORED TOTAL ROW */}
               <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
                 <td>TOTAL</td>
 
@@ -348,7 +314,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* STYLE */}
       <style jsx global>{`
         .app {
           padding: 40px;
