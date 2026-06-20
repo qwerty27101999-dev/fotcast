@@ -168,15 +168,10 @@ export default function Home() {
           <table
             border={1}
             cellPadding={6}
-            style={{
-              borderCollapse: "collapse",
-              width: "100%",
-              fontFamily: "Calibri",
-              fontSize: 12,
-            }}
+            className="table"
           >
             <thead>
-              <tr style={{ background: "#0abab5", color: "white" }}>
+              <tr className="table-header">
                 <th>ФИО</th>
                 <th>Подразделение</th>
 
@@ -239,7 +234,7 @@ export default function Home() {
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table border={1} cellPadding={6}>
             <thead>
-              <tr style={{ background: "#0abab5", color: "white" }}>
+              <tr className="table-header">
                 <th>Департамент</th>
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
