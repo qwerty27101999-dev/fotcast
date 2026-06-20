@@ -9,14 +9,15 @@ import { parseExcelDate } from "@/utils/date";
 
 export default function Home() {
   const [data, setData] = useState<any[]>([]);
-
-  const CURRENT_YEAR = new Date().getFullYear();
-  const [year, setYear] = useState(CURRENT_YEAR);
+  const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
   const CAP = 2_979_000;
   const RATE_LOW = 0.3;
   const RATE_HIGH = 0.151;
+
+  const formatMoney = (v: number) =>
+    new Intl.NumberFormat("ru-RU").format(v);
 
   const handleFile = (e: any) => {
     const file = e.target.files[0];
@@ -33,37 +34,40 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  const months = useMemo(() => {
-    return Array.from(
-      { length: 12 },
-      (_, i) => new Date(year, i, 1)
-    );
-  }, [year]);
+  const months = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => new Date(year, i, 1)),
+    [year]
+  );
 
-  const monthLabels = useMemo(() => {
-    return months.map(m =>
-      m.toLocaleString("ru", { month: "short" })
-    );
-  }, [months]);
+  const monthLabels = useMemo(
+    () =>
+      months.map((m) =>
+        m.toLocaleString("ru", { month: "short" })
+      ),
+    [months]
+  );
 
-  const payroll = useMemo(() => {
-    return buildPayroll(
-      data,
-      months,
-      CAP,
-      RATE_LOW,
-      RATE_HIGH,
-      parseExcelDate
-    );
-  }, [data, months, year]);
+  const payroll = useMemo(
+    () =>
+      buildPayroll(
+        data,
+        months,
+        CAP,
+        RATE_LOW,
+        RATE_HIGH,
+        parseExcelDate
+      ),
+    [data, months]
+  );
 
-  const headcount = useMemo(() => {
-    return buildHeadcount(data, months, parseExcelDate);
-  }, [data, months, year]);
+  const headcount = useMemo(
+    () => buildHeadcount(data, months, parseExcelDate),
+    [data, months]
+  );
 
   return (
     <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
-      <h1>ФОТcast v0.05 (HR + Finance split model)</h1>
+      <h1>ФОТcast v0.04 (UI upgrade)</h1>
 
       <input type="file" onChange={handleFile} />
 
@@ -72,11 +76,13 @@ export default function Home() {
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
         >
-          {Array.from({ length: 3 }, (_, i) => CURRENT_YEAR + i).map(y => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
+          {Array.from({ length: 3 }, (_, i) => new Date().getFullYear() + i).map(
+            (y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            )
+          )}
         </select>
 
         <button
@@ -88,20 +94,23 @@ export default function Home() {
       </div>
 
       <div style={{ marginTop: 20 }}>
-        <button onClick={() => setTab("payroll")}>
-          Payroll (money)
-        </button>
-        <button onClick={() => setTab("headcount")}>
-          Headcount (HR)
-        </button>
+        <button onClick={() => setTab("payroll")}>Payroll</button>
+        <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
-      {/* PAYROLL */}
+      {/* ================= PAYROLL ================= */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
-          <table border={1} cellPadding={6}>
+          <table
+            border={1}
+            cellPadding={6}
+            style={{
+              borderCollapse: "collapse",
+              width: "100%",
+            }}
+          >
             <thead>
-              <tr>
+              <tr style={{ background: "#0abab5", color: "white" }}>
                 <th>ФИО</th>
                 <th>Подразделение</th>
 
@@ -126,15 +135,36 @@ export default function Home() {
                   <td>{p.department}</td>
 
                   {p.rows.map((r: any, i: number) => (
-                    <td key={"f" + i}>{r.fot}</td>
+                    <td key={"f" + i}>{formatMoney(r.fot)}</td>
                   ))}
 
                   {p.rows.map((r: any, i: number) => (
-                    <td key={"i" + i}>{r.ins}</td>
+                    <td key={"i" + i}>{formatMoney(r.ins)}</td>
                   ))}
 
+                  {/* 💥 VISUAL UPGRADE ONLY HERE */}
                   {p.rows.map((r: any, i: number) => (
-                    <td key={"t" + i}>{r.total}</td>
+                    <td key={"t" + i} style={{ minWidth: 120 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2,
+                        }}
+                      >
+                        <div style={{ fontWeight: 600 }}>
+                          {formatMoney(r.total)}
+                        </div>
+
+                        <div style={{ fontSize: 10, opacity: 0.7 }}>
+                          INS: {formatMoney(r.ins)}
+                        </div>
+
+                        <div style={{ fontSize: 10, opacity: 0.7 }}>
+                          FOT: {formatMoney(r.fot)}
+                        </div>
+                      </div>
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -143,12 +173,12 @@ export default function Home() {
         </div>
       )}
 
-      {/* HEADCOUNT */}
+      {/* ================= HEADCOUNT ================= */}
       {tab === "headcount" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table border={1} cellPadding={6}>
             <thead>
-              <tr>
+              <tr style={{ background: "#0abab5", color: "white" }}>
                 <th>Департамент</th>
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
