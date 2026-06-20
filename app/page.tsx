@@ -156,7 +156,7 @@ export default function Home() {
 
   return (
     <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
-      <h1>ФОТcast v0.03 (FLAT GRID)</h1>
+      <h1>ФОТcast v0.02</h1>
 
       <input type="file" onChange={handleFile} />
 
