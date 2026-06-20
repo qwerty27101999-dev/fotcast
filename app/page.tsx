@@ -177,12 +177,9 @@ export default function Home() {
           )}
         </select>
 
-        <button
-          onClick={() => exportPayroll(payroll, monthLabels, year)}
-          style={{ marginLeft: 10 }}
-        >
-          Export
-        </button>
+        <button className="btn" onClick={() => exportPayroll(payroll, monthLabels, year)}>
+  Export
+</button>
       </div>
 
 {/* TABS */}
