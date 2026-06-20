@@ -12,7 +12,7 @@ type Employee = {
 };
 
 // ----------------------------
-// SAFE GET (FIX FOR EXCEL KEYS)
+// SAFE GET FOR EXCEL HEADERS
 // ----------------------------
 const safeGet = (obj: any, keys: string[]) => {
   for (const k of keys) {
@@ -22,12 +22,10 @@ const safeGet = (obj: any, keys: string[]) => {
 };
 
 export default function Home() {
-  const [data, setData] = useState<any[]>(() => {
-    if (typeof window === "undefined") return [];
-    const saved = localStorage.getItem("fotcast");
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  // ----------------------------
+  // STATE (SSR SAFE)
+  // ----------------------------
+  const [data, setData] = useState<any[]>([]);
   const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
@@ -36,25 +34,42 @@ export default function Home() {
   const RATE_HIGH = 0.151;
 
   // ----------------------------
+  // LOCAL STORAGE LOAD (CLIENT ONLY)
+  // ----------------------------
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const saved = localStorage.getItem("fotcast");
+    if (saved) {
+      try {
+        setData(JSON.parse(saved));
+      } catch {}
+    }
+  }, []);
+
+  // ----------------------------
+  // SAVE TO LOCAL STORAGE
+  // ----------------------------
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("fotcast", JSON.stringify(data));
+  }, [data]);
+
+  const clearData = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("fotcast");
+    }
+    setData([]);
+  };
+
+  // ----------------------------
   // FORMAT
   // ----------------------------
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(Math.round(v));
 
   // ----------------------------
-  // LOCAL STORAGE
-  // ----------------------------
-  useEffect(() => {
-    localStorage.setItem("fotcast", JSON.stringify(data));
-  }, [data]);
-
-  const clearData = () => {
-    localStorage.removeItem("fotcast");
-    setData([]);
-  };
-
-  // ----------------------------
-  // DATE PARSER (ROBUST)
+  // DATE PARSER
   // ----------------------------
   const parseExcelDate = (value: any): Date | null => {
     if (!value) return null;
@@ -91,16 +106,14 @@ export default function Home() {
   };
 
   // ----------------------------
-  // NORMALIZATION (FIXED SAFE MAPPING)
+  // NORMALIZE EMPLOYEES
   // ----------------------------
   const employees: Employee[] = useMemo(() => {
     return data.map((emp) => ({
       name: safeGet(emp, ["name", "ФИО"]) || "—",
       department:
         (safeGet(emp, ["department", "Department"]) || "—").trim(),
-      salary: Number(
-        safeGet(emp, ["salary", "Salary"]) || 0
-      ),
+      salary: Number(safeGet(emp, ["salary", "Salary"]) || 0),
       hireDate: parseExcelDate(
         safeGet(emp, ["hire_date", "hire date", "hireDate"])
       ),
@@ -114,10 +127,7 @@ export default function Home() {
   // MONTHS
   // ----------------------------
   const months = useMemo(() => {
-    return Array.from(
-      { length: 12 },
-      (_, i) => new Date(year, i, 1)
-    );
+    return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
   }, [year]);
 
   const monthLabels = useMemo(
@@ -129,7 +139,7 @@ export default function Home() {
   );
 
   // ----------------------------
-  // WORKED DAYS (FIXED CORE)
+  // WORKED DAYS
   // ----------------------------
   const getWorkedDays = (
     hire: Date | null,
@@ -148,9 +158,7 @@ export default function Home() {
       month.getFullYear(),
       month.getMonth() + 1,
       0
-    );
-
-    const start = hire > startMonth ? hire : startMonth;
+    );const start = hire > startMonth ? hire : startMonth;
     const end = fire && fire < endMonth ? fire : endMonth;
 
     if (start > end) return 0;
@@ -159,8 +167,9 @@ export default function Home() {
   };
 
   // ----------------------------
-  // PAYROLL ENGINE (CORRECT)
-  // ----------------------------const payroll = useMemo(() => {
+  // PAYROLL ENGINE
+  // ----------------------------
+  const payroll = useMemo(() => {
     return employees.map((emp) => {
       let cumulative = 0;
       const rows: any[] = [];
@@ -222,7 +231,7 @@ export default function Home() {
   }, [employees]);
 
   // ----------------------------
-  // HEADCOUNT (FIXED)
+  // HEADCOUNT
   // ----------------------------
   const headcountMatrix = useMemo(() => {
     return departments.map((dep) => {
@@ -296,7 +305,7 @@ export default function Home() {
   // ----------------------------
   return (
     <main style={{ padding: 30, fontFamily: "Calibri", fontSize: 12 }}>
-      <h2>FOTcast v1.1 (STABLE ENGINE)</h2>
+      <h2>FOTcast v1.2 (BUILD SAFE)</h2>
 
       <input type="file" onChange={handleFile} />
 
@@ -327,8 +336,7 @@ export default function Home() {
       <div style={{ marginTop: 20 }}>
         <button onClick={() => setTab("payroll")}>
           Payroll
-        </button>
-        <button onClick={() => setTab("headcount")}>
+        </button><button onClick={() => setTab("headcount")}>
           Headcount
         </button>
       </div>
@@ -338,7 +346,8 @@ export default function Home() {
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table
             border={1}
-            cellPadding={6}style={{
+            cellPadding={6}
+            style={{
               borderCollapse: "collapse",
               width: "100%",
             }}
