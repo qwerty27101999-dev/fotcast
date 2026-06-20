@@ -1,34 +1,30 @@
 "use client";
 
 <style jsx global>{`
-  * {
-    font-family: "Century Gothic", Arial, sans-serif;
-  }
-
-  table {
+  .table {
     border-collapse: collapse;
-    border: 1px solid #d0d7e2;
     width: 100%;
+    font-family: "Century Gothic", sans-serif;
+    font-size: 12px;
   }
 
-  th {
-    background: #83A1CD;
+  .table th {
+    background: #83A1CD !important;
     color: #000;
-    font-weight: 400; /* убрали жирность */
+    font-weight: 400;
     text-align: left;
     padding: 6px 10px;
     border: 1px solid #d0d7e2;
   }
 
-  td {
+  .table td {
     border: 1px solid #d0d7e2;
     padding: 6px 10px;
     text-align: left;
-    vertical-align: middle;
   }
 
-  tr:hover td {
-    background: #f6f8fb;
+  .table tr {
+    background: transparent;
   }
 `}</style>
 
