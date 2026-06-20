@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 import { buildPayroll } from "@/lib/payrollEngine";
 import { buildHeadcount } from "@/lib/headcountEngine";
@@ -8,6 +8,8 @@ import { exportPayroll } from "@/utils/exportExcel";
 import { parseExcelDate } from "@/utils/date";
 
 export default function Home() {
+  const STORAGE_KEY = "fotcast_memory_v1";
+
   const [data, setData] = useState<any[]>([]);
   const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
@@ -18,6 +20,18 @@ export default function Home() {
 
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(v);
+
+  // 📥 LOAD MEMORY
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+
+      if (parsed.data) setData(parsed.data);
+      if (parsed.year) setYear(parsed.year);
+      if (parsed.tab) setTab(parsed.tab);
+    }
+  }, []);
 
   const handleFile = (e: any) => {
     const file = e.target.files[0];
@@ -62,7 +76,6 @@ export default function Home() {
     [data, months]
   );
 
-  // 📊 DEPARTMENT SUMMARY (MONTHLY + YEAR)
   const deptSummary = useMemo(() => {
     const map = new Map<string, number[]>();
 
@@ -87,13 +100,34 @@ export default function Home() {
     }));
   }, [payroll]);
 
+  // 💾 SAVE
+  const saveMemory = () => {
+    const payload = {
+      data,
+      year,
+      tab,
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    alert("Saved ✔");
+  };
+
+  // 🧹 CLEAR
+  const clearMemory = () => {
+    localStorage.removeItem(STORAGE_KEY);
+
+    setData([]);
+    setYear(new Date().getFullYear());
+    setTab("payroll");
+  };
+
   return (
     <main className="app">
       <h1>ФОТcast v0.04</h1>
 
       <input type="file" onChange={handleFile} />
 
-      {/* YEAR */}
+      {/* YEAR + ACTIONS */}
       <div style={{ marginTop: 20 }}>
         <select
           value={year}
@@ -113,6 +147,14 @@ export default function Home() {
           style={{ marginLeft: 10 }}
         >
           Export
+        </button>
+
+        <button onClick={saveMemory} style={{ marginLeft: 10 }}>
+          Save
+        </button>
+
+        <button onClick={clearMemory} style={{ marginLeft: 10 }}>
+          Clear
         </button>
       </div>
 
@@ -158,7 +200,7 @@ export default function Home() {
             </tbody>
           </table>
 
-          {/* ================= SUMMARY BY DEPARTMENT ================= */}
+          {/* SUMMARY */}
           <div style={{ marginTop: 40 }}>
             <h3>Summary by Department (Monthly)</h3>
 
