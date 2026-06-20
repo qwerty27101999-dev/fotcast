@@ -19,16 +19,18 @@ export default function Home() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
-  // Excel-like filters (dropdown multi-select)
+  // Jira-style filters (simple text + multi)
   const [filters, setFilters] = useState({
-    department: [] as string[],
-    name: [] as string[],
+    department: "",
+    name: "",
   });
 
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(v);
 
-  // ================= MEMORY LOAD =================
+  const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
+
+  // ================= LOAD USER =================
   useEffect(() => {
     const last = localStorage.getItem("fotcast_last_user");
     if (last) setActiveUser(last);
@@ -47,7 +49,7 @@ export default function Home() {
     }
   }, [activeUser]);
 
-  // ================= FILE LOAD =================
+  // ================= FILE =================
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -77,7 +79,6 @@ export default function Home() {
 
   const clearMemory = () => {
     if (!activeUser) return;
-
     localStorage.removeItem(STORAGE_PREFIX + activeUser);
     setData([]);
   };
@@ -93,29 +94,18 @@ export default function Home() {
     [months]
   );
 
-  // ================= OPTIONS =================
-  const departmentOptions = useMemo(
-    () => Array.from(new Set(data.map((d: any) => d.department || "—"))),
-    [data]
-  );
-
-  const nameOptions = useMemo(
-    () => Array.from(new Set(data.map((d: any) => d.name))),
-    [data]
-  );
-
-  // ================= FILTER APPLY =================
+  // ================= FILTER =================
   const filteredData = useMemo(() => {
     return data.filter((emp: any) => {
       const dep = emp.department || "—";
 
       const depOk =
-        filters.department.length === 0 ||
-        filters.department.includes(dep);
+        !filters.department ||
+        dep.toLowerCase().includes(filters.department.toLowerCase());
 
       const nameOk =
-        filters.name.length === 0 ||
-        filters.name.includes(emp.name);
+        !filters.name ||
+        emp.name?.toLowerCase().includes(filters.name.toLowerCase());
 
       return depOk && nameOk;
     });
@@ -140,33 +130,40 @@ export default function Home() {
     [filteredData, months]
   );
 
-  const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
+  // ================= PAYROLL TOTALS =================
+  const payrollTotals = useMemo(() => {
+    const monthly = Array(12).fill(0);
 
-  // ================= FILTER TOGGLE =================
-  const toggle = (key: "department" | "name", value: string) => {
-    setFilters((prev) => {
-      const exists = prev[key].includes(value);
-
-      return {
-        ...prev,
-        [key]: exists
-          ? prev[key].filter((v) => v !== value)
-          : [...prev[key], value],
-      };
+    payroll.forEach((p: any) => {
+      p.rows.forEach((r: any, i: number) => {
+        monthly[i] += r.total;
+      });
     });
-  };
 
-  const clearFilters = () =>
-    setFilters({ department: [], name: [] });
+    return monthly;
+  }, [payroll]);
+
+  // ================= HEADCOUNT TOTALS =================
+  const headcountTotals = useMemo(() => {
+    const monthly = Array(12).fill(0);
+
+    headcount.forEach((r: any) => {
+      months.forEach((_, i) => {
+        monthly[i] += r[i];
+      });
+    });
+
+    return monthly;
+  }, [headcount, months]);
 
   // ================= UI =================
   return (
     <main className="app">
-      <h1>ФОТcast v0.11</h1>
+      <h1>ФОТcast v0.12</h1>
 
       <input type="file" onChange={handleFile} />
 
-      {/* USER ACTIONS */}
+      {/* USER CONTROLS */}
       <div style={{ marginTop: 10 }}>
         <button onClick={saveMemory}>Save</button>
         <button onClick={clearMemory} style={{ marginLeft: 10 }}>
@@ -174,9 +171,12 @@ export default function Home() {
         </button>
       </div>
 
-      {/* CONTROLS */}
+      {/* YEAR */}
       <div style={{ marginTop: 20 }}>
-        <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
+        <select
+          value={year}
+          onChange={(e) => setYear(Number(e.target.value))}
+        >
           {Array.from({ length: 3 }, (_, i) => new Date().getFullYear() + i).map(
             (y) => (
               <option key={y}>{y}</option>
@@ -190,41 +190,6 @@ export default function Home() {
         >
           Export
         </button>
-
-        <button onClick={clearFilters} style={{ marginLeft: 10 }}>
-          Clear Filters
-        </button>
-      </div>
-
-      {/* EXCEL-LIKE FILTER ROW */}
-      <div style={{ marginTop: 20 }}>
-        <div>
-          <b>Department filter:</b>
-          {departmentOptions.map((d) => (
-            <label key={d} style={{ marginLeft: 10 }}>
-              <input
-                type="checkbox"
-                checked={filters.department.includes(d)}
-                onChange={() => toggle("department", d)}
-              />
-              {d}
-            </label>
-          ))}
-        </div>
-
-        <div style={{ marginTop: 10 }}>
-          <b>Name filter:</b>
-          {nameOptions.map((n) => (
-            <label key={n} style={{ marginLeft: 10 }}>
-              <input
-                type="checkbox"
-                checked={filters.name.includes(n)}
-                onChange={() => toggle("name", n)}
-              />
-              {n}
-            </label>
-          ))}
-        </div>
       </div>
 
       {/* TABS */}
@@ -236,6 +201,25 @@ export default function Home() {
       {/* ================= PAYROLL ================= */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
+          {/* Jira-style filters */}
+          <div style={{ marginBottom: 10, display: "flex", gap: 10 }}>
+            <input
+              placeholder="Filter department..."
+              value={filters.department}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, department: e.target.value }))
+              }
+            />
+
+            <input
+              placeholder="Filter name..."
+              value={filters.name}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, name: e.target.value }))
+              }
+            />
+          </div>
+
           <table className="table">
             <thead>
               <tr>
@@ -265,6 +249,18 @@ export default function Home() {
                   </td>
                 </tr>
               ))}
+
+              {/* 🔥 RESTORED TOTAL ROW */}
+              <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
+                <td>TOTAL</td>
+                <td />
+
+                {payrollTotals.map((v, i) => (
+                  <td key={i}>{formatMoney(v)}</td>
+                ))}
+
+                <td>{formatMoney(sum(payrollTotals))}</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -281,6 +277,8 @@ export default function Home() {
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
+
+                <th>TOTAL</th>
               </tr>
             </thead>
 
@@ -292,17 +290,20 @@ export default function Home() {
                   {months.map((_, j) => (
                     <td key={j}>{r[j]}</td>
                   ))}
+
+                  <td>{sum(months.map((_, j) => r[j]))}</td>
                 </tr>
               ))}
 
+              {/* TOTAL ROW */}
               <tr style={{ fontWeight: 600, background: "#f5f7fa" }}>
                 <td>TOTAL</td>
 
-                {months.map((_, j) => (
-                  <td key={j}>
-                    {sum(headcount.map((r: any) => r[j]))}
-                  </td>
+                {headcountTotals.map((v, i) => (
+                  <td key={i}>{v}</td>
                 ))}
+
+                <td>{sum(headcountTotals)}</td>
               </tr>
             </tbody>
           </table>
@@ -334,6 +335,18 @@ export default function Home() {
         .table td {
           border: 1px solid #d0d7e2;
           padding: 6px 10px;
+        }
+
+        input {
+          padding: 6px 8px;
+          border: 1px solid #ccc;
+          font-family: inherit;
+          font-size: 12px;
+        }
+
+        button {
+          padding: 6px 10px;
+          font-size: 12px;
         }
       `}</style>
     </main>
