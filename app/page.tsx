@@ -9,6 +9,7 @@ import { parseExcelDate } from "@/utils/date";
 
 export default function Home() {
   const [data, setData] = useState<any[]>([]);
+
   const CURRENT_YEAR = new Date().getFullYear();
   const [year, setYear] = useState(CURRENT_YEAR);
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
@@ -17,6 +18,7 @@ export default function Home() {
   const RATE_LOW = 0.3;
   const RATE_HIGH = 0.151;
 
+  // 📥 FILE IMPORT
   const handleFile = (e: any) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -32,49 +34,65 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  const months = useMemo(
-    () => Array.from({ length: 12 }, (_, i) => new Date(year, i, 1)),
-    [year]
-  );
+  // 📅 MONTHS (depends on year)
+  const months = useMemo(() => {
+    return Array.from(
+      { length: 12 },
+      (_, i) => new Date(year, i, 1)
+    );
+  }, [year]);
 
-  const monthLabels = months.map(m =>
-    m.toLocaleString("ru", { month: "short" })
-  );
+  const monthLabels = useMemo(() => {
+    return months.map(m =>
+      m.toLocaleString("ru", { month: "short" })
+    );
+  }, [months]);
 
-  const payroll = useMemo(
-    () =>
-      buildPayroll(
-        data,
-        months,
-        CAP,
-        RATE_LOW,
-        RATE_HIGH,
-        parseExcelDate
-      ),
-    [data, months]
-  );
+  // 💰 PAYROLL ENGINE
+  const payroll = useMemo(() => {
+    return buildPayroll(
+      data,
+      months,
+      CAP,
+      RATE_LOW,
+      RATE_HIGH,
+      parseExcelDate
+    );
+  }, [data, months, year]);
 
-  const headcountMatrix = useMemo(
-    () => buildHeadcount(data, months, parseExcelDate),
-    [data, months]
-  );
+  // 👥 HEADCOUNT ENGINE
+  const headcountMatrix = useMemo(() => {
+    return buildHeadcount(
+      data,
+      months,
+      parseExcelDate
+    );
+  }, [data, months, year]);
 
+  // 📤 EXPORT
   const handleExport = () =>
     exportPayroll(payroll, monthLabels, year);
 
   return (
     <main style={{ padding: 40, fontFamily: "Calibri", fontSize: 12 }}>
-      <h1>ФОТcast v0.02 (refactored)</h1>
+      <h1>ФОТcast v0.03 (stable build)</h1>
 
+      {/* 📥 upload */}
       <input type="file" onChange={handleFile} />
 
+      {/* 🧠 controls */}
       <div style={{ marginTop: 20 }}>
         <select
           value={year}
-          onChange={e => setYear(Number(e.target.value))}
+          onChange={(e) => setYear(Number(e.target.value))}
         >
-          {Array.from({ length: 3 }, (_, i) => CURRENT_YEAR + i).map(y => (
-            <option key={y}>{y}</option>
+          {Array.from(
+            { length: 3 },
+            (_, i) => CURRENT_YEAR + i
+          ).map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
           ))}
         </select>
 
@@ -83,46 +101,65 @@ export default function Home() {
         </button>
       </div>
 
+      {/* tabs */}
       <div style={{ marginTop: 20 }}>
-        <button onClick={() => setTab("payroll")}>Payroll</button>
-        <button onClick={() => setTab("headcount")}>Headcount</button>
+        <button onClick={() => setTab("payroll")}>
+          Payroll
+        </button>
+        <button onClick={() => setTab("headcount")}>
+          Headcount
+        </button>
       </div>
 
+      {/* ================= PAYROLL ================= */}
       {tab === "payroll" && (
-        <div style={{ marginTop: 30 }}>
-          <table border={1} cellPadding={6}>
+        <div style={{ marginTop: 30, overflowX: "auto" }}>
+          <table
+            key={year}
+            border={1}
+            cellPadding={6}
+            style={{
+              borderCollapse: "collapse",
+              width: "100%",
+              fontFamily: "Calibri",
+              fontSize: 12,
+            }}
+          >
             <thead>
-              <tr>
+              <tr style={{ background: "#0abab5", color: "white" }}>
                 <th>ФИО</th>
                 <th>Подразделение</th>
+
                 {monthLabels.map((m, i) => (
-                  <th key={i}>ФОТ {m}</th>
+                  <th key={"f" + i}>ФОТ {m}</th>
                 ))}
+
                 {monthLabels.map((m, i) => (
-                  <th key={i}>INS {m}</th>
+                  <th key={"i" + i}>INS {m}</th>
                 ))}
+
                 {monthLabels.map((m, i) => (
-                  <th key={i}>TOTAL {m}</th>
+                  <th key={"t" + i}>TOTAL {m}</th>
                 ))}
               </tr>
             </thead>
 
             <tbody>
-              {payroll.map((p, idx) => (
+              {payroll.map((p: any, idx: number) => (
                 <tr key={idx}>
                   <td>{p.name}</td>
                   <td>{p.department}</td>
 
                   {p.rows.map((r: any, i: number) => (
-                    <td key={i}>{r.fot}</td>
+                    <td key={"f" + i}>{r.fot}</td>
                   ))}
 
                   {p.rows.map((r: any, i: number) => (
-                    <td key={i}>{r.ins}</td>
+                    <td key={"i" + i}>{r.ins}</td>
                   ))}
 
                   {p.rows.map((r: any, i: number) => (
-                    <td key={i}>{r.total}</td>
+                    <td key={"t" + i}>{r.total}</td>
                   ))}
                 </tr>
               ))}
@@ -131,11 +168,16 @@ export default function Home() {
         </div>
       )}
 
+      {/* ================= HEADCOUNT ================= */}
       {tab === "headcount" && (
-        <div style={{ marginTop: 30 }}>
-          <table border={1} cellPadding={6}>
+        <div style={{ marginTop: 30, overflowX: "auto" }}>
+          <table
+            key={"hc" + year}
+            border={1}
+            cellPadding={6}
+          >
             <thead>
-              <tr>
+              <tr style={{ background: "#0abab5", color: "white" }}>
                 <th>Департамент</th>
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
@@ -147,6 +189,7 @@ export default function Home() {
               {headcountMatrix.map((r: any, i: number) => (
                 <tr key={i}>
                   <td>{r.dep}</td>
+
                   {months.map((_, j) => (
                     <td key={j}>{r[j]}</td>
                   ))}
