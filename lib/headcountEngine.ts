@@ -11,7 +11,7 @@ export function buildHeadcount(
     const row: any = { dep };
 
     months.forEach((m, i) => {
-      const end = new Date(
+      const monthEnd = new Date(
         m.getFullYear(),
         m.getMonth() + 1,
         0
@@ -21,17 +21,11 @@ export function buildHeadcount(
         const hire = parseExcelDate(emp.hire_date);
         const termination = parseExcelDate(emp.termination_date);
 
-        const start = new Date(
-          m.getFullYear(),
-          m.getMonth(),
-          1
-        );
-
         return (
           (emp.department || "—") === dep &&
           hire &&
-          hire <= end &&
-          (!termination || termination >= start)
+          hire <= monthEnd &&
+          (!termination || termination > monthEnd)
         );
       }).length;
     });
