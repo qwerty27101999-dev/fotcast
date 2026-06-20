@@ -11,6 +11,16 @@ type Employee = {
   fireDate: Date | null;
 };
 
+// ----------------------------
+// SAFE GET (FIX FOR EXCEL KEYS)
+// ----------------------------
+const safeGet = (obj: any, keys: string[]) => {
+  for (const k of keys) {
+    if (obj?.[k] !== undefined) return obj[k];
+  }
+  return undefined;
+};
+
 export default function Home() {
   const [data, setData] = useState<any[]>(() => {
     if (typeof window === "undefined") return [];
@@ -32,7 +42,7 @@ export default function Home() {
     new Intl.NumberFormat("ru-RU").format(Math.round(v));
 
   // ----------------------------
-  // SAVE / CLEAR
+  // LOCAL STORAGE
   // ----------------------------
   useEffect(() => {
     localStorage.setItem("fotcast", JSON.stringify(data));
@@ -44,7 +54,7 @@ export default function Home() {
   };
 
   // ----------------------------
-  // DATE PARSER (FIXED)
+  // DATE PARSER (ROBUST)
   // ----------------------------
   const parseExcelDate = (value: any): Date | null => {
     if (!value) return null;
@@ -81,15 +91,22 @@ export default function Home() {
   };
 
   // ----------------------------
-  // NORMALIZATION
+  // NORMALIZATION (FIXED SAFE MAPPING)
   // ----------------------------
   const employees: Employee[] = useMemo(() => {
     return data.map((emp) => ({
-      name: emp.name,
-      department: (emp.department || "—").trim(),
-      salary: Number(emp.salary || 0),
-      hireDate: parseExcelDate(emp.hire_date),
-      fireDate: parseExcelDate(emp.fire_date),
+      name: safeGet(emp, ["name", "ФИО"]) || "—",
+      department:
+        (safeGet(emp, ["department", "Department"]) || "—").trim(),
+      salary: Number(
+        safeGet(emp, ["salary", "Salary"]) || 0
+      ),
+      hireDate: parseExcelDate(
+        safeGet(emp, ["hire_date", "hire date", "hireDate"])
+      ),
+      fireDate: parseExcelDate(
+        safeGet(emp, ["fire_date", "fire date", "fireDate"])
+      ),
     }));
   }, [data]);
 
@@ -97,11 +114,17 @@ export default function Home() {
   // MONTHS
   // ----------------------------
   const months = useMemo(() => {
-    return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
+    return Array.from(
+      { length: 12 },
+      (_, i) => new Date(year, i, 1)
+    );
   }, [year]);
 
   const monthLabels = useMemo(
-    () => months.map((m) => m.toLocaleString("ru", { month: "short" })),
+    () =>
+      months.map((m) =>
+        m.toLocaleString("ru", { month: "short" })
+      ),
     [months]
   );
 
@@ -115,8 +138,17 @@ export default function Home() {
   ) => {
     if (!hire) return 0;
 
-    const startMonth = new Date(month.getFullYear(), month.getMonth(), 1);
-    const endMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    const startMonth = new Date(
+      month.getFullYear(),
+      month.getMonth(),
+      1
+    );
+
+    const endMonth = new Date(
+      month.getFullYear(),
+      month.getMonth() + 1,
+      0
+    );
 
     const start = hire > startMonth ? hire : startMonth;
     const end = fire && fire < endMonth ? fire : endMonth;
@@ -127,12 +159,10 @@ export default function Home() {
   };
 
   // ----------------------------
-  // PAYROLL ENGINE (FIXED)
-  // ----------------------------
-  const payroll = useMemo(() => {
+  // PAYROLL ENGINE (CORRECT)
+  // ----------------------------const payroll = useMemo(() => {
     return employees.map((emp) => {
       let cumulative = 0;
-
       const rows: any[] = [];
 
       for (const m of months) {
@@ -153,13 +183,17 @@ export default function Home() {
           continue;
         }
 
-        const fot = emp.salary * (workedDays / daysInMonth);const remaining = Math.max(CAP - cumulative, 0);
+        const fot =
+          emp.salary * (workedDays / daysInMonth);
+
+        const remaining = Math.max(CAP - cumulative, 0);
 
         const taxedLow = Math.min(remaining, fot);
         const taxedHigh = Math.max(fot - remaining, 0);
 
         const ins =
-          taxedLow * RATE_LOW + taxedHigh * RATE_HIGH;
+          taxedLow * RATE_LOW +
+          taxedHigh * RATE_HIGH;
 
         cumulative += fot;
 
@@ -214,7 +248,7 @@ export default function Home() {
           if (
             hire &&
             hire <= end &&
-            (!fire || fire >= end) // важно: включаем день увольнения
+            (!fire || fire >= end)
           ) {
             count++;
           }
@@ -262,7 +296,7 @@ export default function Home() {
   // ----------------------------
   return (
     <main style={{ padding: 30, fontFamily: "Calibri", fontSize: 12 }}>
-      <h2>FOTcast v1.0 (FIXED ENGINE)</h2>
+      <h2>FOTcast v1.1 (STABLE ENGINE)</h2>
 
       <input type="file" onChange={handleFile} />
 
@@ -304,8 +338,7 @@ export default function Home() {
         <div style={{ marginTop: 30, overflowX: "auto" }}>
           <table
             border={1}
-            cellPadding={6}
-            style={{
+            cellPadding={6}style={{
               borderCollapse: "collapse",
               width: "100%",
             }}
@@ -323,7 +356,8 @@ export default function Home() {
             <tbody>
               {payroll.map((p, i) => (
                 <tr key={i}>
-                  <td>{p.name}</td><td>{p.department}</td>
+                  <td>{p.name}</td>
+                  <td>{p.department}</td>
 
                   {p.rows.map((r: any, j: number) => (
                     <td key={j}>
