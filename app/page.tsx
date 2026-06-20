@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
 
 type Employee = {
@@ -12,7 +12,12 @@ type Employee = {
 };
 
 export default function Home() {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<any[]>(() => {
+    if (typeof window === "undefined") return [];
+    const saved = localStorage.getItem("fotcast");
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"payroll" | "headcount">("payroll");
 
@@ -20,19 +25,42 @@ export default function Home() {
   const RATE_LOW = 0.3;
   const RATE_HIGH = 0.151;
 
+  // ----------------------------
+  // FORMAT
+  // ----------------------------
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(Math.round(v));
 
   // ----------------------------
-  // DATE PARSER
+  // SAVE / CLEAR
+  // ----------------------------
+  useEffect(() => {
+    localStorage.setItem("fotcast", JSON.stringify(data));
+  }, [data]);
+
+  const clearData = () => {
+    localStorage.removeItem("fotcast");
+    setData([]);
+  };
+
+  // ----------------------------
+  // DATE PARSER (FIXED)
   // ----------------------------
   const parseExcelDate = (value: any): Date | null => {
     if (!value) return null;
+
     if (typeof value === "number") {
-      return new Date((value - 25569) * 86400 * 1000);
+      const d = XLSX.SSF.parse_date_code(value);
+      return new Date(d.y, d.m - 1, d.d);
     }
-    const d = new Date(value);
-    return isNaN(d.getTime()) ? null : d;
+
+    if (typeof value === "string") {
+      const [dd, mm, yyyy] = value.split(".");
+      if (!dd  !mm  !yyyy) return null;
+      return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    }
+
+    return null;
   };
 
   // ----------------------------
@@ -53,7 +81,7 @@ export default function Home() {
   };
 
   // ----------------------------
-  // NORMALIZATION (CRITICAL)
+  // NORMALIZATION
   // ----------------------------
   const employees: Employee[] = useMemo(() => {
     return data.map((emp) => ({
@@ -78,54 +106,66 @@ export default function Home() {
   );
 
   // ----------------------------
-  // PAYROLL ENGINE (FIXED + DAY-BASED)
+  // WORKED DAYS (FIXED CORE)
+  // ----------------------------
+  const getWorkedDays = (
+    hire: Date | null,
+    fire: Date | null,
+    month: Date
+  ) => {
+    if (!hire) return 0;
+
+    const startMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+    const endMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+
+    const start = hire > startMonth ? hire : startMonth;
+    const end = fire && fire < endMonth ? fire : endMonth;
+
+    if (start > end) return 0;
+
+    return end.getDate() - start.getDate() + 1;
+  };
+
+  // ----------------------------
+  // PAYROLL ENGINE (FIXED)
   // ----------------------------
   const payroll = useMemo(() => {
     return employees.map((emp) => {
       let cumulative = 0;
+
       const rows: any[] = [];
 
-      const hire = emp.hireDate?.getTime() ?? null;
-      const fire = emp.fireDate?.getTime() ?? null;
-
       for (const m of months) {
-        const monthStart = new Date(m.getFullYear(), m.getMonth(), 1);
-        const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+        const daysInMonth = new Date(
+          m.getFullYear(),
+          m.getMonth() + 1,
+          0
+        ).getDate();
 
-        const start = hire && hire > monthStart.getTime() ? new Date(hire) : monthStart;
-        const end =
-          fire && fire < monthEnd.getTime() ? new Date(fire) : monthEnd;
+        const workedDays = getWorkedDays(
+          emp.hireDate,
+          emp.fireDate,
+          m
+        );
 
-        if (!hire || start.getTime() > end.getTime()) {
+        if (workedDays === 0) {
           rows.push({ fot: 0, ins: 0, total: 0 });
           continue;
         }
 
-        const daysInMonth =
-          (monthEnd.getTime() - monthStart.getTime()) /
-            (1000 * 60 * 60 * 24) +
-          1;
-
-        const workedDays =
-          (end.getTime() - start.getTime()) /
-            (1000 * 60 * 60 * 24) +
-          1;
-
-        const dailyFOT = emp.salary / daysInMonth;
-        const fot = dailyFOT * workedDays;
-
-        const remaining = Math.max(CAP - cumulative, 0);
+        const fot = emp.salary * (workedDays / daysInMonth);const remaining = Math.max(CAP - cumulative, 0);
 
         const taxedLow = Math.min(remaining, fot);
         const taxedHigh = Math.max(fot - remaining, 0);
 
-        const ins = taxedLow * RATE_LOW + taxedHigh * RATE_HIGH;
+        const ins =
+          taxedLow * RATE_LOW + taxedHigh * RATE_HIGH;
 
         cumulative += fot;
 
         rows.push({
           fot,
-          ins: Math.round(ins),
+          ins,
           total: fot + ins,
         });
       }
@@ -142,31 +182,40 @@ export default function Home() {
   // DEPARTMENTS
   // ----------------------------
   const departments = useMemo(() => {
-    return Array.from(new Set(employees.map((e) => e.department)));
+    return Array.from(
+      new Set(employees.map((e) => e.department))
+    );
   }, [employees]);
 
-  // ----------------------------// HEADCOUNT (OPTIMIZED)
+  // ----------------------------
+  // HEADCOUNT (FIXED)
   // ----------------------------
   const headcountMatrix = useMemo(() => {
     return departments.map((dep) => {
       const row: any = { dep };
 
-      const emps = employees.filter((e) => e.department === dep);
+      const emps = employees.filter(
+        (e) => e.department === dep
+      );
 
       for (let i = 0; i < months.length; i++) {
         const end = new Date(
           months[i].getFullYear(),
           months[i].getMonth() + 1,
           0
-        ).getTime();
+        );
 
         let count = 0;
 
         for (const e of emps) {
-          const hire = e.hireDate?.getTime();
-          const fire = e.fireDate?.getTime();
+          const hire = e.hireDate;
+          const fire = e.fireDate;
 
-          if (hire && hire <= end && (!fire || fire > end)) {
+          if (
+            hire &&
+            hire <= end &&
+            (!fire || fire >= end) // важно: включаем день увольнения
+          ) {
             count++;
           }
         }
@@ -213,12 +262,19 @@ export default function Home() {
   // ----------------------------
   return (
     <main style={{ padding: 30, fontFamily: "Calibri", fontSize: 12 }}>
-      <h2>FOTcast v0.04 (DAY-BASED ENGINE)</h2>
+      <h2>FOTcast v1.0 (FIXED ENGINE)</h2>
 
       <input type="file" onChange={handleFile} />
 
+      <button onClick={clearData} style={{ marginLeft: 10 }}>
+        Clear
+      </button>
+
       <div style={{ marginTop: 20 }}>
-        <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
+        <select
+          value={year}
+          onChange={(e) => setYear(Number(e.target.value))}
+        >
           {[0, 1, 2].map((i) => {
             const y = new Date().getFullYear() + i;
             return (
@@ -235,8 +291,12 @@ export default function Home() {
       </div>
 
       <div style={{ marginTop: 20 }}>
-        <button onClick={() => setTab("payroll")}>Payroll</button>
-        <button onClick={() => setTab("headcount")}>Headcount</button>
+        <button onClick={() => setTab("payroll")}>
+          Payroll
+        </button>
+        <button onClick={() => setTab("headcount")}>
+          Headcount
+        </button>
       </div>
 
       {/* PAYROLL */}
@@ -263,16 +323,13 @@ export default function Home() {
             <tbody>
               {payroll.map((p, i) => (
                 <tr key={i}>
-                  <td>{p.name}</td>
-                  <td>{p.department}</td>
+                  <td>{p.name}</td><td>{p.department}</td>
 
                   {p.rows.map((r: any, j: number) => (
                     <td key={j}>
-                      <div>
-                        <div>{formatMoney(r.fot)}</div>
-                        <div style={{ opacity: 0.6, fontSize: 10 }}>
-                          {formatMoney(r.ins)}
-                        </div>
+                      <div>{formatMoney(r.fot)}</div>
+                      <div style={{ opacity: 0.6, fontSize: 10 }}>
+                        {formatMoney(r.ins)}
                       </div>
                     </td>
                   ))}
@@ -296,7 +353,8 @@ export default function Home() {
               </tr>
             </thead>
 
-            <tbody>{headcountMatrix.map((r, i) => (
+            <tbody>
+              {headcountMatrix.map((r: any, i: number) => (
                 <tr key={i}>
                   <td>{r.dep}</td>
                   {months.map((_, j) => (
