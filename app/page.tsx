@@ -1,33 +1,5 @@
 "use client";
 
-<style jsx global>{`
-  .table {
-    border-collapse: collapse;
-    width: 100%;
-    font-family: "Century Gothic", sans-serif;
-    font-size: 12px;
-  }
-
-  .table th {
-    background: #83A1CD !important;
-    color: #000;
-    font-weight: 400;
-    text-align: left;
-    padding: 6px 10px;
-    border: 1px solid #d0d7e2;
-  }
-
-  .table td {
-    border: 1px solid #d0d7e2;
-    padding: 6px 10px;
-    text-align: left;
-  }
-
-  .table tr {
-    background: transparent;
-  }
-`}</style>
-
 import { useState, useMemo } from "react";
 
 import { buildPayroll } from "@/lib/payrollEngine";
@@ -75,7 +47,6 @@ export default function Home() {
     [months]
   );
 
-  // 💰 PAYROLL
   const payroll = useMemo(
     () =>
       buildPayroll(
@@ -89,13 +60,11 @@ export default function Home() {
     [data, months]
   );
 
-  // 👥 HEADCOUNT
   const headcount = useMemo(
     () => buildHeadcount(data, months, parseExcelDate),
     [data, months]
   );
 
-  // 📊 SUMMARY (BY DEPARTMENT)
   const deptSummary = useMemo(() => {
     const map = new Map<string, number[]>();
 
@@ -121,11 +90,11 @@ export default function Home() {
 
   return (
     <main className="app">
-      <h1>ФОТ'каст v 0.03</h1>
+      <h1>ФОТ'каст v0.03</h1>
 
       <input type="file" onChange={handleFile} />
 
-      {/* YEAR + EXPORT */}
+      {/* YEAR */}
       <div style={{ marginTop: 20 }}>
         <select
           value={year}
@@ -150,24 +119,16 @@ export default function Home() {
 
       {/* TABS */}
       <div style={{ marginTop: 20 }}>
-        <button onClick={() => setTab("payroll")}>
-          Payroll
-        </button>
-        <button onClick={() => setTab("headcount")}>
-          Headcount
-        </button>
+        <button onClick={() => setTab("payroll")}>Payroll</button>
+        <button onClick={() => setTab("headcount")}>Headcount</button>
       </div>
 
       {/* ================= PAYROLL ================= */}
       {tab === "payroll" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
-          <table
-            border={1}
-            cellPadding={6}
-            className="table"
-          >
+          <table className="table">
             <thead>
-              <tr className="table-header">
+              <tr>
                 <th>ФИО</th>
                 <th>Подразделение</th>
 
@@ -185,10 +146,8 @@ export default function Home() {
 
                   {p.rows.map((r: any, i: number) => (
                     <td key={i}>
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <div style={{ fontWeight: 600 }}>
-                          {formatMoney(r.total)}
-                        </div>
+                      <div>
+                        <div>{formatMoney(r.total)}</div>
                         <div style={{ fontSize: 10, opacity: 0.7 }}>
                           INS: {formatMoney(r.ins)} | FOT: {formatMoney(r.fot)}
                         </div>
@@ -200,15 +159,15 @@ export default function Home() {
             </tbody>
           </table>
 
-          {/* 📊 SUMMARY (ONLY IN PAYROLL TAB) */}
+          {/* SUMMARY */}
           <div style={{ marginTop: 40 }}>
             <h3>Summary by Department</h3>
 
-            <table border={1} cellPadding={6}>
+            <table className="table">
               <thead>
                 <tr>
                   <th>Department</th>
-                  <th>Total Payroll (Year)</th>
+                  <th>Total Year</th>
                 </tr>
               </thead>
 
@@ -228,10 +187,11 @@ export default function Home() {
       {/* ================= HEADCOUNT ================= */}
       {tab === "headcount" && (
         <div style={{ marginTop: 30, overflowX: "auto" }}>
-          <table border={1} cellPadding={6}>
+          <table className="table">
             <thead>
-              <tr className="table-header">
+              <tr>
                 <th>Департамент</th>
+
                 {monthLabels.map((m, i) => (
                   <th key={i}>{m}</th>
                 ))}
@@ -252,6 +212,39 @@ export default function Home() {
           </table>
         </div>
       )}
+
+      {/* GLOBAL STYLE */}
+      <style jsx global>{`
+        .app {
+          padding: 40px;
+          font-family: "Century Gothic", sans-serif;
+          font-size: 12px;
+          background: #fff;
+          color: #000;
+        }
+
+        .table {
+          border-collapse: collapse;
+          width: 100%;
+          font-family: "Century Gothic", sans-serif;
+          font-size: 12px;
+        }
+
+        .table th {
+          background: #83A1CD;
+          font-weight: 400;
+          text-align: left;
+          padding: 6px 10px;
+          border: 1px solid #d0d7e2;
+        }
+
+        .table td {
+          border: 1px solid #d0d7e2;
+          padding: 6px 10px;
+          text-align: left;
+          vertical-align: top;
+        }
+      `}</style>
     </main>
   );
 }
