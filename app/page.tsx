@@ -29,10 +29,13 @@ export default function Home() {
   const [minSalary, setMinSalary] = useState("");
   const [maxSalary, setMaxSalary] = useState("");
 
+  // 🧠 HEADCOUNT MODE TOGGLE
+  const [hcMode, setHcMode] = useState<"global" | "filtered">("global");
+
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("ru-RU").format(v);
 
-  // ================= LOAD USER =================
+  // ================= USER LOAD =================
   useEffect(() => {
     const last = localStorage.getItem("fotcast_last_user");
     if (last) setActiveUser(last);
@@ -84,7 +87,6 @@ export default function Home() {
     alert("Saved ✔");
   };
 
-  // ================= CLEAR =================
   const clearMemory = () => {
     if (!activeUser) return;
 
@@ -122,25 +124,19 @@ export default function Home() {
           .replace(",", ".")
       );
 
-      const matchDep =
-        depFilter === "ALL" || dep === depFilter;
+      const matchDep = depFilter === "ALL" || dep === depFilter;
 
       const matchName =
-        emp.name
-          ?.toLowerCase()
-          .includes(nameFilter.toLowerCase());
+        emp.name?.toLowerCase().includes(nameFilter.toLowerCase());
 
-      const matchMin =
-        !minSalary || salary >= Number(minSalary);
-
-      const matchMax =
-        !maxSalary || salary <= Number(maxSalary);
+      const matchMin = !minSalary || salary >= Number(minSalary);
+      const matchMax = !maxSalary || salary <= Number(maxSalary);
 
       return matchDep && matchName && matchMin && matchMax;
     });
   }, [data, depFilter, nameFilter, minSalary, maxSalary]);
 
-  // ================= ENGINE =================
+  // ================= PAYROLL =================
   const payroll = useMemo(
     () =>
       buildPayroll(
@@ -154,11 +150,15 @@ export default function Home() {
     [filteredData, months]
   );
 
+  // ================= HEADCOUNT (FIXED LOGIC) =================
+  const headcountSource = hcMode === "filtered" ? filteredData : data;
+
   const headcount = useMemo(
-    () => buildHeadcount(data, months, parseExcelDate),
-    [data, months]
+    () => buildHeadcount(headcountSource, months, parseExcelDate),
+    [headcountSource, months, hcMode]
   );
 
+  // ================= DEPT SUMMARY =================
   const deptSummary = useMemo(() => {
     const map = new Map<string, number[]>();
 
@@ -209,16 +209,13 @@ export default function Home() {
 
   return (
     <main className="app">
-      <h1>ФОТcast v0.06</h1>
+      <h1>ФОТcast v0.07</h1>
 
       {/* USER */}
       <div style={{ marginBottom: 20 }}>
         <b>User:</b> {activeUser}
 
-        <button
-          style={{ marginLeft: 10 }}
-          onClick={() => setActiveUser("")}
-        >
+        <button onClick={() => setActiveUser("")} style={{ marginLeft: 10 }}>
           Switch
         </button>
       </div>
@@ -238,10 +235,7 @@ export default function Home() {
           ))}
         </select>
 
-        <button
-          onClick={() => exportPayroll(payroll, monthLabels, year)}
-          style={{ marginLeft: 10 }}
-        >
+        <button onClick={() => exportPayroll(payroll, monthLabels, year)} style={{ marginLeft: 10 }}>
           Export
         </button>
 
@@ -294,6 +288,22 @@ export default function Home() {
         </button>
       </div>
 
+      {/* HEADCOUNT MODE */}
+      {tab === "headcount" && (
+        <div style={{ marginTop: 15 }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={hcMode === "filtered"}
+              onChange={(e) =>
+                setHcMode(e.target.checked ? "filtered" : "global")
+              }
+            />
+            Apply filters to Headcount
+          </label>
+        </div>
+      )}
+
       {/* TABS */}
       <div style={{ marginTop: 20 }}>
         <button onClick={() => setTab("payroll")}>Payroll</button>
@@ -327,37 +337,6 @@ export default function Home() {
               ))}
             </tbody>
           </table>
-
-          {/* SUMMARY */}
-          <div style={{ marginTop: 40 }}>
-            <h3>Summary by Department</h3>
-
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Department</th>
-                  {monthLabels.map((m, i) => (
-                    <th key={i}>{m}</th>
-                  ))}
-                  <th>Total</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {deptSummary.map((d, i) => (
-                  <tr key={i}>
-                    <td>{d.dep}</td>
-
-                    {d.months.map((v, j) => (
-                      <td key={j}>{formatMoney(v)}</td>
-                    ))}
-
-                    <td>{formatMoney(d.totalYear)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 
@@ -375,7 +354,7 @@ export default function Home() {
             </thead>
 
             <tbody>
-              {headcount.map((r, i) => (
+              {headcount.map((r: any, i: number) => (
                 <tr key={i}>
                   <td>{r.dep}</td>
                   {months.map((_, j) => (
