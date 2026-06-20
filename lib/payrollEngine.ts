@@ -8,24 +8,47 @@ export function buildPayroll(
 ) {
   return data.map(emp => {
     const hire = parseExcelDate(emp.hire_date);
-    const salary = Number(emp.salary || 0);
+    const termination = parseExcelDate(emp.termination_date);
+
+    const salary = Number(
+      String(emp.salary || 0)
+        .replace(/\s/g, "")
+        .replace(",", ".")
+    );
 
     let cumulative = 0;
     const rows: any[] = [];
 
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < months.length; i++) {
+      const monthStart = new Date(
+        months[i].getFullYear(),
+        months[i].getMonth(),
+        1
+      );
+
       const monthEnd = new Date(
         months[i].getFullYear(),
         months[i].getMonth() + 1,
         0
       );
 
-      if (!hire || hire > monthEnd) {
-        rows.push({ fot: 0, ins: 0, total: 0 });
+      // 🧠 ACTIVE LOGIC (FIXED BOUNDARY)
+      const active =
+        hire &&
+        hire <= monthEnd &&
+        (!termination || termination > monthEnd);
+
+      if (!active) {
+        rows.push({
+          fot: 0,
+          ins: 0,
+          total: 0,
+        });
         continue;
       }
 
       const fot = salary;
+
       const remaining = Math.max(CAP - cumulative, 0);
 
       let ins = 0;
