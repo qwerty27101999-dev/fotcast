@@ -11,11 +11,28 @@ export function buildHeadcount(
     const row: any = { dep };
 
     months.forEach((m, i) => {
-      const end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+      const end = new Date(
+        m.getFullYear(),
+        m.getMonth() + 1,
+        0
+      );
 
       row[i] = data.filter(emp => {
-        const d = parseExcelDate(emp.hire_date);
-        return (emp.department || "—") === dep && d && d <= end;
+        const hire = parseExcelDate(emp.hire_date);
+        const termination = parseExcelDate(emp.termination_date);
+
+        const start = new Date(
+          m.getFullYear(),
+          m.getMonth(),
+          1
+        );
+
+        return (
+          (emp.department || "—") === dep &&
+          hire &&
+          hire <= end &&
+          (!termination || termination >= start)
+        );
       }).length;
     });
 
