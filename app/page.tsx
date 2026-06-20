@@ -1,5 +1,37 @@
 "use client";
 
+<style jsx global>{`
+  * {
+    font-family: "Century Gothic", Arial, sans-serif;
+  }
+
+  table {
+    border-collapse: collapse;
+    border: 1px solid #d0d7e2;
+    width: 100%;
+  }
+
+  th {
+    background: #83A1CD;
+    color: #000;
+    font-weight: 400; /* убрали жирность */
+    text-align: left;
+    padding: 6px 10px;
+    border: 1px solid #d0d7e2;
+  }
+
+  td {
+    border: 1px solid #d0d7e2;
+    padding: 6px 10px;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  tr:hover td {
+    background: #f6f8fb;
+  }
+`}</style>
+
 import { useState, useMemo } from "react";
 
 import { buildPayroll } from "@/lib/payrollEngine";
