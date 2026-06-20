@@ -231,7 +231,8 @@ export default function Home() {
         }
 
         .table th {
-          background: #83A1CD;
+          background: #0d1d35;
+          color: #fff;
           font-weight: 400;
           text-align: left;
           padding: 6px 10px;
