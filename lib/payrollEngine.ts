@@ -1,79 +1,171 @@
+import { calculateInsurance } from "./insuranceEngine";
+import {
+  Employee,
+  PayrollEmployee,
+  PayrollRow,
+} from "./types";
+
 export function buildPayroll(
-  data: any[],
+  data: Employee[],
   months: Date[],
-  CAP: number,
-  RATE_LOW: number,
-  RATE_HIGH: number,
   parseExcelDate: (v: any) => Date | null
-) {
-  return data.map(emp => {
+): PayrollEmployee[] {
+  return data.map((emp) => {
     const hire = parseExcelDate(emp.hire_date);
     const termination = parseExcelDate(emp.termination_date);
 
-    const salary = Number(
-      String(emp.salary || 0)
-        .replace(/\s/g, "")
-        .replace(",", ".")
-    );
+    const salary = toNumber(emp.salary);
 
-    let cumulative = 0;
-    const rows: any[] = [];
+    const monthlyBonus = toNumber(emp.monthly_bonus);
+    const quarterlyBonus = toNumber(emp.quarterly_bonus);
+    const annualBonus = toNumber(emp.annual_bonus);
+
+    let cumulativeBase = 0;
+
+    const rows: PayrollRow[] = [];
 
     for (let i = 0; i < months.length; i++) {
-      const m = months[i];
+      const month = months[i];
 
-      const monthStart = new Date(m.getFullYear(), m.getMonth(), 1);
-      const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+      const monthStart = new Date(
+        month.getFullYear(),
+        month.getMonth(),
+        1
+      );
 
-      // 🧠 real working window inside month
-      const start = hire && hire > monthStart ? hire : monthStart;
+      const monthEnd = new Date(
+        month.getFullYear(),
+        month.getMonth() + 1,
+        0
+      );
+
+      const start =
+        hire && hire > monthStart
+          ? hire
+          : monthStart;
+
       const end =
-        termination && termination < monthEnd ? termination : monthEnd;
+        termination && termination < monthEnd
+          ? termination
+          : monthEnd;
 
-      // ❌ not active at all
       if (!hire || start > end) {
-        rows.push({ fot: 0, ins: 0, total: 0 });
+        rows.push(emptyRow());
         continue;
       }
 
-      // 💥 DAYS CALC
       const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
       const workedDays =
-        Math.floor((end.getTime() - start.getTime()) / MS_PER_DAY) + 1;
+        Math.floor(
+          (end.getTime() - start.getTime()) /
+            MS_PER_DAY
+        ) + 1;
 
       const totalDays =
-        Math.floor((monthEnd.getTime() - monthStart.getTime()) / MS_PER_DAY) + 1;
+        Math.floor(
+          (monthEnd.getTime() -
+            monthStart.getTime()) /
+            MS_PER_DAY
+        ) + 1;
 
       const ratio = workedDays / totalDays;
 
-      const fot = salary * ratio;
+      const fixedPay = salary * ratio;
 
-      const remainingCap = Math.max(CAP - cumulative, 0);
+      const monthBonus = monthlyBonus * ratio;
 
-      let ins = 0;
+      const qBonus =
+        isQuarterMonth(month.getMonth())
+          ? quarterlyBonus * ratio
+          : 0;
 
-      if (remainingCap >= fot) {
-        ins = fot * RATE_LOW;
-      } else {
-        ins =
-          remainingCap * RATE_LOW +
-          (fot - remainingCap) * RATE_HIGH;
-      }
+      const yBonus =
+        month.getMonth() === 11
+          ? annualBonus * ratio
+          : 0;
 
-      cumulative += fot;
+      const fot =
+        fixedPay +
+        monthBonus +
+        qBonus +
+        yBonus;
+
+      const insurance =
+        calculateInsurance(
+          fot,
+          cumulativeBase
+        );
+
+      cumulativeBase += fot;
 
       rows.push({
-        fot: Math.round(fot),
-        ins: Math.round(ins),
-        total: Math.round(fot + ins),
+        fot: round(fot),
+
+        fixedPay: round(fixedPay),
+
+        monthlyBonus: round(monthBonus),
+
+        quarterlyBonus: round(qBonus),
+
+        annualBonus: round(yBonus),
+
+        insurance,
+
+        total: round(
+          fot + insurance.total
+        ),
       });
     }
 
     return {
       name: emp.name,
-      department: emp.department || "—",
+      department:
+        emp.department || "—",
       rows,
     };
   });
+}
+
+function isQuarterMonth(month: number) {
+  return [2, 5, 8, 11].includes(month);
+}
+
+function emptyRow(): PayrollRow {
+  return {
+    fot: 0,
+
+    fixedPay: 0,
+
+    monthlyBonus: 0,
+
+    quarterlyBonus: 0,
+
+    annualBonus: 0,
+
+    insurance: {
+      ops: 0,
+      oms: 0,
+      vnim: 0,
+      nsipz: 0,
+      total: 0,
+    },
+
+    total: 0,
+  };
+}
+
+function round(value: number) {
+  return Math.round(value);
+}
+
+function toNumber(value: any): number {
+  if (value === null || value === undefined)
+    return 0;
+
+  return Number(
+    String(value)
+      .replace(/\s/g, "")
+      .replace(",", ".")
+  ) || 0;
 }
