@@ -2,8 +2,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "FOTcast",
-  description: "Payroll & headcount analytics engine",
+  title: "fot'cast",
+  description: "«Forecast your payroll before it happens»",
 };
 
 export default function RootLayout({
