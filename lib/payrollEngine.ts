@@ -5,14 +5,26 @@ import {
   PayrollRow,
 } from "./types";
 
+/**
+ * Нормализация даты:
+ * убирает timezone / время → остаётся чистый календарный день
+ */
+function normalizeDate(d: Date | null): Date | null {
+  if (!d) return null;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
 export function buildPayroll(
   data: Employee[],
   months: Date[],
   parseExcelDate: (v: any) => Date | null
 ): PayrollEmployee[] {
   return data.map((emp) => {
-    const hire = parseExcelDate(emp.hire_date);
-    const termination = parseExcelDate(emp.termination_date);
+    const hireRaw = parseExcelDate(emp.hire_date);
+    const terminationRaw = parseExcelDate(emp.termination_date);
+
+    const hire = normalizeDate(hireRaw);
+    const termination = normalizeDate(terminationRaw);
 
     const salary = toNumber(emp.salary);
 
@@ -39,15 +51,18 @@ export function buildPayroll(
         0
       );
 
+      const startBase = monthStart;
+      const endBase = monthEnd;
+
       const start =
-        hire && hire > monthStart
+        hire && hire > startBase
           ? hire
-          : monthStart;
+          : startBase;
 
       const end =
-        termination && termination < monthEnd
+        termination && termination < endBase
           ? termination
-          : monthEnd;
+          : endBase;
 
       if (!hire || start > end) {
         rows.push(emptyRow());
@@ -120,8 +135,7 @@ export function buildPayroll(
 
     return {
       name: emp.name,
-      department:
-        emp.department || "—",
+      department: emp.department || "—",
       rows,
     };
   });
@@ -134,15 +148,10 @@ function isQuarterMonth(month: number) {
 function emptyRow(): PayrollRow {
   return {
     fot: 0,
-
     fixedPay: 0,
-
     monthlyBonus: 0,
-
     quarterlyBonus: 0,
-
     annualBonus: 0,
-
     insurance: {
       ops: 0,
       oms: 0,
@@ -150,7 +159,6 @@ function emptyRow(): PayrollRow {
       nsipz: 0,
       total: 0,
     },
-
     total: 0,
   };
 }
