@@ -17,8 +17,8 @@ export default function RootLayout({
         <div className="app-shell">
 
           <header className="app-header">
-            <h1>FOTcast</h1>
-            <p>Payroll & headcount analytics engine</p>
+            <h1>fot'cast</h1>
+            <p>«Forecast your payroll before it happens»</p>
           </header>
 
           <main>
