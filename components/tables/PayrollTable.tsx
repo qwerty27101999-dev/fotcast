@@ -1,3 +1,5 @@
+import { formatNumber } from "@/utils/formatNumber";
+
 export function PayrollTable({ payroll, months }: any) {
   return (
     <table className="table">
@@ -17,23 +19,23 @@ export function PayrollTable({ payroll, months }: any) {
       </thead>
 
       <tbody>
-
         {payroll.map((p: any, i: number) => (
           <tr key={i}>
             <td>{p.name}</td>
 
             {p.rows.map((r: any, j: number) => (
-              <td key={j}>
-                {r.total}
+              <td key={j} className="num">
+                {formatNumber(r.total)}
               </td>
             ))}
 
-            <td>
-              {p.rows.reduce((s: number, r: any) => s + r.total, 0)}
+            <td className="num">
+              {formatNumber(
+                p.rows.reduce((s: number, r: any) => s + r.total, 0)
+              )}
             </td>
           </tr>
         ))}
-
       </tbody>
 
     </table>
