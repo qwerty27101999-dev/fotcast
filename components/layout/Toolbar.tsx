@@ -17,9 +17,9 @@ export function Toolbar({ data, setData, year, setYear }: any) {
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet);
 
-      console.log("EXCEL LOADED:", json); // 👈 важно для диагностики
+console.log("EXCEL:", json);
 
-      setData(json);
+setData(Array.isArray(json) ? json : []);
     } catch (err) {
       console.error("Excel parse error:", err);
     }
