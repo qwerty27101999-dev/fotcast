@@ -3,19 +3,30 @@ import * as XLSX from "xlsx";
 export function Toolbar({ data, setData, year, setYear }: any) {
 
   const handleFile = (e: any) => {
-    const file = e.target.files[0];
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    const reader = new FileReader();
+  const reader = new FileReader();
 
-    reader.onload = (event: any) => {
-      const wb = XLSX.read(event.target.result, { type: "binary" });
+  reader.onload = (event: any) => {
+    try {
+      const data = new Uint8Array(event.target.result);
+
+      const wb = XLSX.read(data, { type: "array" });
+
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet);
-      setData(json);
-    };
 
-    reader.readAsBinaryString(file);
+      console.log("EXCEL LOADED:", json); // 👈 важно для диагностики
+
+      setData(json);
+    } catch (err) {
+      console.error("Excel parse error:", err);
+    }
   };
+
+  reader.readAsArrayBuffer(file);
+};
 
   return (
     <div className="toolbar">
