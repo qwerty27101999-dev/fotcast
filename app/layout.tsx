@@ -1,4 +1,13 @@
 import "./globals.css";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin", "cyrillic"] });
+
+export const metadata: Metadata = {
+  title: "FOTcast",
+  description: "Payroll & headcount analytics tool",
+};
 
 export default function RootLayout({
   children,
@@ -7,12 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru">
-      <head>
-        <title>FOTcast</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </head>
-
-      <body>
+      <body className={inter.className}>
         {children}
       </body>
     </html>
