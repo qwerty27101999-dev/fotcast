@@ -1,3 +1,5 @@
+import { formatNumber } from "@/utils/formatNumber";
+
 export function DashboardCards({ payroll }: any) {
 
   const totalCost = payroll.reduce(
@@ -21,13 +23,24 @@ export function DashboardCards({ payroll }: any) {
   );
 
   return (
-    <div className="cards">
+  <div className="cards">
 
-      <div className="card">Total Cost: {totalCost}</div>
-      <div className="card">Headcount: {hc}</div>
-      <div className="card">FOT: {fot}</div>
-      <div className="card">Insurance: {insurance}</div>
-
+    <div className="card">
+      Total Cost: {formatNumber(totalCost)}
     </div>
-  );
+
+    <div className="card">
+      Headcount: {formatNumber(hc)}
+    </div>
+
+    <div className="card">
+      FOT: {formatNumber(fot)}
+    </div>
+
+    <div className="card">
+      Insurance: {formatNumber(insurance)}
+    </div>
+
+  </div>
+);
 }
