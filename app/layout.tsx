@@ -1,12 +1,9 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-
-const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
 export const metadata: Metadata = {
   title: "FOTcast",
-  description: "Payroll & headcount analytics tool",
+  description: "Payroll & headcount analytics engine",
 };
 
 export default function RootLayout({
@@ -16,8 +13,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru">
-      <body className={inter.className}>
-        {children}
+      <body>
+        <div className="app-shell">
+
+          <header className="app-header">
+            <h1>FOTcast</h1>
+            <p>Payroll & headcount analytics engine</p>
+          </header>
+
+          <main>
+            {children}
+          </main>
+
+        </div>
       </body>
     </html>
   );
