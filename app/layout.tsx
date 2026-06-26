@@ -7,7 +7,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <head>
+        <title>FOTcast</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+
+      <body>
+        {children}
+      </body>
     </html>
   );
 }
