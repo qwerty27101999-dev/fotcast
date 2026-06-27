@@ -1,30 +1,22 @@
 import { calculateInsurance } from "./insuranceEngine";
+import { getEmploymentPeriod } from "./calendarEngine";
+
 import {
   Employee,
   PayrollEmployee,
   PayrollRow,
 } from "./types";
 
-/**
- * Нормализация даты:
- * убирает timezone / время → остаётся чистый календарный день
- */
-function normalizeDate(d: Date | null): Date | null {
-  if (!d) return null;
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
 export function buildPayroll(
   data: Employee[],
   months: Date[],
   parseExcelDate: (v: any) => Date | null
 ): PayrollEmployee[] {
-  return data.map((emp) => {
-    const hireRaw = parseExcelDate(emp.hire_date);
-    const terminationRaw = parseExcelDate(emp.termination_date);
 
-    const hire = normalizeDate(hireRaw);
-    const termination = normalizeDate(terminationRaw);
+  return data.map((emp) => {
+
+    const hire = parseExcelDate(emp.hire_date);
+    const termination = parseExcelDate(emp.termination_date);
 
     const salary = toNumber(emp.salary);
 
@@ -36,75 +28,40 @@ export function buildPayroll(
 
     const rows: PayrollRow[] = [];
 
-    for (let i = 0; i < months.length; i++) {
-      const month = months[i];
+    for (const month of months) {
 
-      const monthStart = new Date(
-        month.getFullYear(),
-        month.getMonth(),
-        1
+      const employment = getEmploymentPeriod(
+        hire,
+        termination,
+        month
       );
 
-      const monthEnd = new Date(
-        month.getFullYear(),
-        month.getMonth() + 1,
-        0
-      );
-
-      const startBase = monthStart;
-      const endBase = monthEnd;
-
-      const start =
-        hire && hire > startBase
-          ? hire
-          : startBase;
-
-      const end =
-        termination && termination < endBase
-          ? termination
-          : endBase;
-
-      if (!hire || start > end) {
+      if (!employment.active) {
         rows.push(emptyRow());
         continue;
       }
 
-      const MS_PER_DAY = 1000 * 60 * 60 * 24;
+      const fixedPay =
+        salary * employment.ratio;
 
-      const workedDays =
-        Math.floor(
-          (end.getTime() - start.getTime()) /
-            MS_PER_DAY
-        ) + 1;
+      const monthBonus =
+        monthlyBonus * employment.ratio;
 
-      const totalDays =
-        Math.floor(
-          (monthEnd.getTime() -
-            monthStart.getTime()) /
-            MS_PER_DAY
-        ) + 1;
-
-      const ratio = workedDays / totalDays;
-
-      const fixedPay = salary * ratio;
-
-      const monthBonus = monthlyBonus * ratio;
-
-      const qBonus =
+      const quarterBonus =
         isQuarterMonth(month.getMonth())
-          ? quarterlyBonus * ratio
+          ? quarterlyBonus * employment.ratio
           : 0;
 
-      const yBonus =
+      const yearBonus =
         month.getMonth() === 11
-          ? annualBonus * ratio
+          ? annualBonus * employment.ratio
           : 0;
 
       const fot =
         fixedPay +
         monthBonus +
-        qBonus +
-        yBonus;
+        quarterBonus +
+        yearBonus;
 
       const insurance =
         calculateInsurance(
@@ -115,30 +72,40 @@ export function buildPayroll(
       cumulativeBase += fot;
 
       rows.push({
+
         fot: round(fot),
 
         fixedPay: round(fixedPay),
 
         monthlyBonus: round(monthBonus),
 
-        quarterlyBonus: round(qBonus),
+        quarterlyBonus: round(quarterBonus),
 
-        annualBonus: round(yBonus),
+        annualBonus: round(yearBonus),
 
         insurance,
 
         total: round(
           fot + insurance.total
         ),
+
       });
+
     }
 
     return {
+
       name: emp.name,
-      department: emp.department || "—",
+
+      department:
+        emp.department || "—",
+
       rows,
+
     };
+
   });
+
 }
 
 function isQuarterMonth(month: number) {
@@ -146,12 +113,19 @@ function isQuarterMonth(month: number) {
 }
 
 function emptyRow(): PayrollRow {
+
   return {
+
     fot: 0,
+
     fixedPay: 0,
+
     monthlyBonus: 0,
+
     quarterlyBonus: 0,
+
     annualBonus: 0,
+
     insurance: {
       ops: 0,
       oms: 0,
@@ -159,8 +133,11 @@ function emptyRow(): PayrollRow {
       nsipz: 0,
       total: 0,
     },
+
     total: 0,
+
   };
+
 }
 
 function round(value: number) {
@@ -168,12 +145,16 @@ function round(value: number) {
 }
 
 function toNumber(value: any): number {
+
   if (value === null || value === undefined)
     return 0;
 
-  return Number(
-    String(value)
-      .replace(/\s/g, "")
-      .replace(",", ".")
-  ) || 0;
+  return (
+    Number(
+      String(value)
+        .replace(/\s/g, "")
+        .replace(",", ".")
+    ) || 0
+  );
+
 }
