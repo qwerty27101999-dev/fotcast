@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { buildPayroll } from "@/lib/payrollEngine";
 import { buildHeadcount } from "@/lib/headcountEngine";
 import { parseExcelDate } from "@/utils/date";
+import { exportPayroll } from "@/utils/exportExcel";
 
 import { Toolbar } from "@/components/layout/Toolbar";
 import { DashboardCards } from "@/components/layout/DashboardCards";
@@ -41,6 +42,9 @@ export default function Page() {
         setData={setData}
         year={year}
         setYear={setYear}
+        payroll={payroll}
+        months={months}
+        onExport={exportPayroll}
       />
 
       <DashboardCards payroll={payroll} />
