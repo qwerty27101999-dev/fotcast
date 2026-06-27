@@ -7,26 +7,35 @@ export function exportPayroll(
 ) {
   const wb = XLSX.utils.book_new();
 
-  const sheet = payroll.map(p => {
+  const sheet = payroll.map((p) => {
     const row: any = {
       ФИО: p.name,
       Подразделение: p.department,
     };
 
     p.rows.forEach((r: any, i: number) => {
-      row[`ФОТ_${monthLabels[i]}`] = r.fot;
-      row[`INS_${monthLabels[i]}`] = r.ins;
-      row[`TOTAL_${monthLabels[i]}`] = r.total;
+      const label = monthLabels[i];
+
+      row[`FOT_${label}`] = r.fot;
+      row[`FIXED_${label}`] = r.fixedPay;
+      row[`BONUS_M_${label}`] = r.monthlyBonus;
+      row[`BONUS_Q_${label}`] = r.quarterlyBonus;
+      row[`BONUS_Y_${label}`] = r.annualBonus;
+
+      row[`INS_TOTAL_${label}`] = r.insurance?.total ?? 0;
+      row[`TOTAL_${label}`] = r.total;
     });
 
     return row;
   });
 
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.json_to_sheet(sheet),
-    "PAYROLL"
-  );
+  const ws = XLSX.utils.json_to_sheet(sheet);
 
-  XLSX.writeFile(wb, `ФОТcast_${year}.xlsx`);
+  // фиксируем ширины колонок (иначе Excel выглядит как мусор)
+  const cols = Object.keys(sheet[0] || {}).map(() => ({ wch: 14 }));
+  ws["!cols"] = cols;
+
+  XLSX.utils.book_append_sheet(wb, ws, "PAYROLL");
+
+  XLSX.writeFile(wb, `FOTcast_${year}.xlsx`);
 }
