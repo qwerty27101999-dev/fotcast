@@ -1,4 +1,5 @@
 import { calculateInsurance } from "./insuranceEngine";
+import { calculateCalendarPayroll } from "./payrollRules";
 import { getEmploymentPeriod } from "./calendarEngine";
 
 import {
@@ -6,6 +7,16 @@ import {
   PayrollEmployee,
   PayrollRow,
 } from "./types";
+
+function normalizeDate(date: Date | null): Date | null {
+  if (!date) return null;
+
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
+}
 
 export function buildPayroll(
   data: Employee[],
@@ -15,13 +26,20 @@ export function buildPayroll(
 
   return data.map((emp) => {
 
-    const hire = parseExcelDate(emp.hire_date);
-    const termination = parseExcelDate(emp.termination_date);
+    const hire = normalizeDate(
+      parseExcelDate(emp.hire_date)
+    );
+
+    const termination = normalizeDate(
+      parseExcelDate(emp.termination_date)
+    );
 
     const salary = toNumber(emp.salary);
 
     const monthlyBonus = toNumber(emp.monthly_bonus);
+
     const quarterlyBonus = toNumber(emp.quarterly_bonus);
+
     const annualBonus = toNumber(emp.annual_bonus);
 
     let cumulativeBase = 0;
@@ -30,63 +48,58 @@ export function buildPayroll(
 
     for (const month of months) {
 
-      const employment = getEmploymentPeriod(
+      const period = getEmploymentPeriod(
         hire,
         termination,
         month
       );
 
-      if (!employment.active) {
+      if (!period.active) {
         rows.push(emptyRow());
         continue;
       }
 
-      const fixedPay =
-        salary * employment.ratio;
+      const payroll = calculateCalendarPayroll({
 
-      const monthBonus =
-        monthlyBonus * employment.ratio;
+        salary,
 
-      const quarterBonus =
-        isQuarterMonth(month.getMonth())
-          ? quarterlyBonus * employment.ratio
-          : 0;
+        monthlyBonus,
 
-      const yearBonus =
-        month.getMonth() === 11
-          ? annualBonus * employment.ratio
-          : 0;
+        quarterlyBonus,
 
-      const fot =
-        fixedPay +
-        monthBonus +
-        quarterBonus +
-        yearBonus;
+        annualBonus,
 
-      const insurance =
-        calculateInsurance(
-          fot,
-          cumulativeBase
-        );
+        workedDays: period.workedDays,
 
-      cumulativeBase += fot;
+        totalDays: period.monthDays,
+
+        month: month.getMonth(),
+
+      });
+
+      const insurance = calculateInsurance(
+        payroll.fot,
+        cumulativeBase
+      );
+
+      cumulativeBase += payroll.fot;
 
       rows.push({
 
-        fot: round(fot),
+        fot: round(payroll.fot),
 
-        fixedPay: round(fixedPay),
+        fixedPay: round(payroll.fixedPay),
 
-        monthlyBonus: round(monthBonus),
+        monthlyBonus: round(payroll.monthlyBonus),
 
-        quarterlyBonus: round(quarterBonus),
+        quarterlyBonus: round(payroll.quarterlyBonus),
 
-        annualBonus: round(yearBonus),
+        annualBonus: round(payroll.annualBonus),
 
         insurance,
 
         total: round(
-          fot + insurance.total
+          payroll.fot + insurance.total
         ),
 
       });
@@ -97,8 +110,7 @@ export function buildPayroll(
 
       name: emp.name,
 
-      department:
-        emp.department || "—",
+      department: emp.department || "—",
 
       rows,
 
@@ -106,10 +118,6 @@ export function buildPayroll(
 
   });
 
-}
-
-function isQuarterMonth(month: number) {
-  return [2, 5, 8, 11].includes(month);
 }
 
 function emptyRow(): PayrollRow {
@@ -127,11 +135,17 @@ function emptyRow(): PayrollRow {
     annualBonus: 0,
 
     insurance: {
+
       ops: 0,
+
       oms: 0,
+
       vnim: 0,
+
       nsipz: 0,
+
       total: 0,
+
     },
 
     total: 0,
@@ -140,21 +154,20 @@ function emptyRow(): PayrollRow {
 
 }
 
-function round(value: number) {
+function round(value: number): number {
   return Math.round(value);
 }
 
 function toNumber(value: any): number {
 
-  if (value === null || value === undefined)
+  if (value === null || value === undefined) {
     return 0;
+  }
 
-  return (
-    Number(
-      String(value)
-        .replace(/\s/g, "")
-        .replace(",", ".")
-    ) || 0
-  );
+  return Number(
+    String(value)
+      .replace(/\s/g, "")
+      .replace(",", ".")
+  ) || 0;
 
 }
