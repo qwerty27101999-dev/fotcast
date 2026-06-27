@@ -1,20 +1,24 @@
 import * as XLSX from "xlsx";
 
+function formatMonthLabel(date: Date) {
+  return date.toLocaleString("en-US", { month: "short" });
+}
+
 export function exportPayroll(
   payroll: any[],
-  monthLabels: string[],
+  months: Date[],
   year: number
 ) {
   const wb = XLSX.utils.book_new();
 
   const sheet = payroll.map((p) => {
     const row: any = {
-      ФИО: p.name,
-      Подразделение: p.department,
+      "Employee": p.name,
+      "Department": p.department,
     };
 
     p.rows.forEach((r: any, i: number) => {
-      const label = monthLabels[i];
+      const label = formatMonthLabel(months[i]);
 
       row[`FOT_${label}`] = r.fot;
       row[`FIXED_${label}`] = r.fixedPay;
@@ -22,7 +26,7 @@ export function exportPayroll(
       row[`BONUS_Q_${label}`] = r.quarterlyBonus;
       row[`BONUS_Y_${label}`] = r.annualBonus;
 
-      row[`INS_TOTAL_${label}`] = r.insurance?.total ?? 0;
+      row[`INS_TOTAL_${label}`] = r.insurance.total;
       row[`TOTAL_${label}`] = r.total;
     });
 
@@ -30,10 +34,6 @@ export function exportPayroll(
   });
 
   const ws = XLSX.utils.json_to_sheet(sheet);
-
-  // фиксируем ширины колонок (иначе Excel выглядит как мусор)
-  const cols = Object.keys(sheet[0] || {}).map(() => ({ wch: 14 }));
-  ws["!cols"] = cols;
 
   XLSX.utils.book_append_sheet(wb, ws, "PAYROLL");
 
