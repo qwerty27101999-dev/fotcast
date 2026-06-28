@@ -1,19 +1,38 @@
-import { buildDashboard } from "@/lib/dashboardEngine";
+import {
+  buildDashboardMetrics,
+} from "@/lib/metrics";
+
 import { formatNumber } from "@/utils/formatNumber";
 
 export function DashboardCards({
   payroll,
+  headcount,
 }: any) {
 
+  const monthlyHeadcount =
+    headcount.length === 0
+      ? []
+      : Array.from(
+          { length: 12 },
+          (_, month) =>
+            headcount.reduce(
+              (sum: number, dep: any) =>
+                sum + dep[month],
+              0
+            )
+        );
+
   const metrics =
-    buildDashboard(payroll);
+    buildDashboardMetrics(
+      payroll,
+      monthlyHeadcount
+    );
 
   return (
 
     <div className="kpi-row">
 
       <div className="card">
-
         <div className="card-title">
           Total Cost
         </div>
@@ -21,23 +40,19 @@ export function DashboardCards({
         <div className="card-value num">
           {formatNumber(metrics.totalCost)}
         </div>
-
       </div>
 
       <div className="card">
-
         <div className="card-title">
           Payroll
         </div>
 
         <div className="card-value num">
-          {formatNumber(metrics.payroll)}
+          {formatNumber(metrics.totalFOT)}
         </div>
-
       </div>
 
       <div className="card">
-
         <div className="card-title">
           Insurance
         </div>
@@ -45,43 +60,42 @@ export function DashboardCards({
         <div className="card-value num">
           {formatNumber(metrics.insurance)}
         </div>
-
       </div>
 
       <div className="card">
-
         <div className="card-title">
-          Headcount
+          Avg HC
         </div>
 
         <div className="card-value num">
-          {formatNumber(metrics.headcount)}
+          {formatNumber(
+            Math.round(metrics.avgHeadcount)
+          )}
         </div>
-
       </div>
 
       <div className="card">
+        <div className="card-title">
+          Peak HC
+        </div>
 
+        <div className="card-value num">
+          {formatNumber(metrics.peakHeadcount)}
+        </div>
+      </div>
+
+      <div className="card">
         <div className="card-title">
           Avg Cost / Employee
         </div>
 
         <div className="card-value num">
-          {formatNumber(metrics.avgCost)}
+          {formatNumber(
+            Math.round(
+              metrics.avgCostPerEmployee
+            )
+          )}
         </div>
-
-      </div>
-
-      <div className="card">
-
-        <div className="card-title">
-          Avg Payroll
-        </div>
-
-        <div className="card-value num">
-          {formatNumber(metrics.avgPayroll)}
-        </div>
-
       </div>
 
     </div>

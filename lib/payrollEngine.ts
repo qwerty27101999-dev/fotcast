@@ -18,10 +18,13 @@ function normalizeDate(date: Date | null): Date | null {
   );
 }
 
+import { Scenario } from "./scenario";
+
 export function buildPayroll(
   data: Employee[],
   months: Date[],
-  parseExcelDate: (v: any) => Date | null
+  parseExcelDate: (v: any) => Date | null,
+  scenario: Scenario
 ): PayrollEmployee[] {
 
   return data.map((emp) => {
