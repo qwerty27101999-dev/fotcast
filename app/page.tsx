@@ -4,27 +4,44 @@ import { useMemo, useState } from "react";
 
 import { buildPayroll } from "@/lib/payrollEngine";
 import { buildHeadcount } from "@/lib/headcountEngine";
+
 import { parseExcelDate } from "@/utils/date";
 import { exportPayroll } from "@/utils/exportExcel";
 
-import { getScenario } from "@/lib/scenario";
+import { baseScenario } from "@/lib/scenario";
 
 import { Toolbar } from "@/components/layout/Toolbar";
-import { DashboardCards } from "@/components/layout/DashboardCards";
-import { Tabs } from "@/components/layout/Tabs";
 
-import { PayrollTable } from "@/components/tables/PayrollTable";
-import { HeadcountTable } from "@/components/tables/HeadcountTable";
+import { Sidebar } from "@/components/navigation/Sidebar";
+import { PageContainer } from "@/components/navigation/PageContainer";
+
+import { DashboardPage } from "@/components/pages/DashboardPage";
+import { PayrollPage } from "@/components/pages/PayrollPage";
+import { HeadcountPage } from "@/components/pages/HeadcountPage";
+import { ScenarioPage } from "@/components/pages/ScenarioPage";
+import { CompanyPage } from "@/components/pages/CompanyPage";
+import { ExportPage } from "@/components/pages/ExportPage";
+
+type AppPage =
+  | "dashboard"
+  | "payroll"
+  | "headcount"
+  | "scenario"
+  | "company"
+  | "export";
 
 export default function Page() {
   const [data, setData] = useState<any[]>([]);
   const [year, setYear] = useState(new Date().getFullYear());
 
-  const [tab, setTab] =
-    useState<"payroll" | "headcount">("payroll");
+  const [page, setPage] =
+    useState<AppPage>("dashboard");
 
-  // Build 2.1
-  const scenario = getScenario("base");
+  /**
+   * Пока используем базовый сценарий.
+   * На Build 3 ScenarioPage будет менять его.
+   */
+  const scenario = baseScenario;
 
   const months = useMemo(
     () =>
@@ -57,42 +74,57 @@ export default function Page() {
   );
 
   return (
-    <main className="app">
+    <div className="app-layout">
 
-      <Toolbar
-        data={data}
-        setData={setData}
-        year={year}
-        setYear={setYear}
-        payroll={payroll}
-        months={months}
-        onExport={exportPayroll}
+      <Sidebar
+        page={page}
+        setPage={setPage}
       />
 
-      <DashboardCards
-        payroll={payroll}
-        headcount={headcount}
-      />
+      <PageContainer>
 
-      <Tabs
-        tab={tab}
-        setTab={setTab}
-      />
-
-      {tab === "payroll" && (
-        <PayrollTable
+        <Toolbar
+          data={data}
+          setData={setData}
+          year={year}
+          setYear={setYear}
           payroll={payroll}
           months={months}
+          onExport={exportPayroll}
         />
-      )}
 
-      {tab === "headcount" && (
-        <HeadcountTable
-          headcount={headcount}
-          months={months}
-        />
-      )}
+        {page === "dashboard" && (
+          <DashboardPage payroll={payroll} />
+        )}
 
-    </main>
+        {page === "payroll" && (
+          <PayrollPage
+            payroll={payroll}
+            months={months}
+          />
+        )}
+
+        {page === "headcount" && (
+          <HeadcountPage
+            headcount={headcount}
+            months={months}
+          />
+        )}
+
+        {page === "scenario" && (
+          <ScenarioPage />
+        )}
+
+        {page === "company" && (
+          <CompanyPage />
+        )}
+
+        {page === "export" && (
+          <ExportPage />
+        )}
+
+      </PageContainer>
+
+    </div>
   );
 }

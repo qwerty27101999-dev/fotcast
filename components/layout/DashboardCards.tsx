@@ -1,84 +1,62 @@
-import {
-  buildDashboardMetrics,
-} from "@/lib/metrics";
-
+import { buildDashboardMetrics } from "@/lib/metrics";
 import { formatNumber } from "@/utils/formatNumber";
 
 export function DashboardCards({
   payroll,
   headcount,
 }: any) {
+  /**
+   * Нормализация headcount в чистый массив:
+   * number[12]
+   */
+  const monthlyHeadcount = headcount?.length
+    ? Array.from({ length: 12 }, (_, month) =>
+        headcount.reduce(
+          (sum: number, dep: any) =>
+            sum + (dep[month] || 0),
+          0
+        )
+      )
+    : Array(12).fill(0);
 
-  const monthlyHeadcount =
-    headcount.length === 0
-      ? []
-      : Array.from(
-          { length: 12 },
-          (_, month) =>
-            headcount.reduce(
-              (sum: number, dep: any) =>
-                sum + dep[month],
-              0
-            )
-        );
-
-  const metrics =
-    buildDashboardMetrics(
-      payroll,
-      monthlyHeadcount
-    );
+  const metrics = buildDashboardMetrics(
+    payroll,
+    monthlyHeadcount
+  );
 
   return (
-
     <div className="kpi-row">
 
       <div className="card">
-        <div className="card-title">
-          Total Cost
-        </div>
-
+        <div className="card-title">Total Cost</div>
         <div className="card-value num">
           {formatNumber(metrics.totalCost)}
         </div>
       </div>
 
       <div className="card">
-        <div className="card-title">
-          Payroll
-        </div>
-
+        <div className="card-title">Payroll</div>
         <div className="card-value num">
           {formatNumber(metrics.totalFOT)}
         </div>
       </div>
 
       <div className="card">
-        <div className="card-title">
-          Insurance
-        </div>
-
+        <div className="card-title">Insurance</div>
         <div className="card-value num">
           {formatNumber(metrics.insurance)}
         </div>
       </div>
 
       <div className="card">
-        <div className="card-title">
-          Avg HC
-        </div>
-
+        <div className="card-title">Avg HC</div>
         <div className="card-value num">
-          {formatNumber(
-            Math.round(metrics.avgHeadcount)
-          )}
+          {formatNumber(Math.round(metrics.avgHeadcount))}
         </div>
       </div>
 
       <div className="card">
-        <div className="card-title">
-          Peak HC
-        </div>
-
+        <div className="card-title">Peak HC</div>
         <div className="card-value num">
           {formatNumber(metrics.peakHeadcount)}
         </div>
@@ -88,18 +66,13 @@ export function DashboardCards({
         <div className="card-title">
           Avg Cost / Employee
         </div>
-
         <div className="card-value num">
           {formatNumber(
-            Math.round(
-              metrics.avgCostPerEmployee
-            )
+            Math.round(metrics.avgCostPerEmployee)
           )}
         </div>
       </div>
 
     </div>
-
   );
-
 }
