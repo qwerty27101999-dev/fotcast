@@ -5,19 +5,16 @@ export function DashboardCards({
   payroll,
   headcount,
 }: any) {
-  /**
-   * Нормализация headcount в чистый массив:
-   * number[12]
-   */
-  const monthlyHeadcount = headcount?.length
-    ? Array.from({ length: 12 }, (_, month) =>
-        headcount.reduce(
-          (sum: number, dep: any) =>
-            sum + (dep[month] || 0),
-          0
-        )
-      )
-    : Array(12).fill(0);
+
+  // нормализуем headcount в безопасный массив чисел
+  const monthlyHeadcount: number[] = Array.from(
+    { length: 12 },
+    (_, month) =>
+      (headcount || []).reduce((sum: number, dep: any) => {
+        const val = Number(dep?.[month] ?? 0);
+        return sum + (isNaN(val) ? 0 : val);
+      }, 0)
+  );
 
   const metrics = buildDashboardMetrics(
     payroll,
@@ -66,6 +63,7 @@ export function DashboardCards({
         <div className="card-title">
           Avg Cost / Employee
         </div>
+
         <div className="card-value num">
           {formatNumber(
             Math.round(metrics.avgCostPerEmployee)
