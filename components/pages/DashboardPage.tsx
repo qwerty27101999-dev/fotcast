@@ -2,17 +2,14 @@ import { DashboardCards } from "../layout/DashboardCards";
 
 import { MonthlyCostChart } from "../charts/MonthlyCostChart";
 import { HeadcountChart } from "../charts/HeadcountChart";
+import { DepartmentCostChart } from "../charts/DepartmentCostChart";
+import { CostStructureChart } from "../charts/CostStructureChart";
 
 export function DashboardPage({
-
   payroll,
-
   headcount,
-
 }: any) {
-
   return (
-
     <>
 
       <h2>Dashboard</h2>
@@ -30,8 +27,14 @@ export function DashboardPage({
         headcount={headcount}
       />
 
+      <DepartmentCostChart
+        payroll={payroll}
+      />
+
+      <CostStructureChart
+        payroll={payroll}
+      />
+
     </>
-
   );
-
 }
