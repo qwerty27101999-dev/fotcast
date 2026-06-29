@@ -44,7 +44,7 @@ export function HeadcountChart({
 
   return (
 
-    <div className="card">
+    <div className="card chart-card">
 
       <div className="card-title">
         Headcount Trend

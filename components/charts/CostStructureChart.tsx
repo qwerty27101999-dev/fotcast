@@ -74,7 +74,7 @@ export function CostStructureChart({
 
   return (
 
-    <div className="card">
+    <div className="card chart-card">
 
       <div className="card-title">
         Cost Structure

@@ -9,7 +9,9 @@ export function DashboardPage({
   payroll,
   headcount,
 }: any) {
+
   return (
+
     <>
 
       <h2>Dashboard</h2>
@@ -19,22 +21,40 @@ export function DashboardPage({
         headcount={headcount}
       />
 
-      <MonthlyCostChart
-        payroll={payroll}
-      />
+      <div className="dashboard-grid">
 
-      <HeadcountChart
-        headcount={headcount}
-      />
+        <div className="dashboard-row">
 
-      <DepartmentCostChart
-        payroll={payroll}
-      />
+          <MonthlyCostChart
+            payroll={payroll}
+          />
 
-      <CostStructureChart
-        payroll={payroll}
-      />
+        </div>
+
+        <div className="dashboard-row two">
+
+          <HeadcountChart
+            headcount={headcount}
+          />
+
+          <CostStructureChart
+            payroll={payroll}
+          />
+
+        </div>
+
+        <div className="dashboard-row">
+
+          <DepartmentCostChart
+            payroll={payroll}
+          />
+
+        </div>
+
+      </div>
 
     </>
+
   );
+
 }

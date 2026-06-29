@@ -80,7 +80,7 @@ export function DepartmentCostChart({
 
   return (
 
-    <div className="card">
+    <div className="card chart-card">
 
       <div className="card-title">
 

@@ -38,7 +38,7 @@ export function MonthlyCostChart({
 
   return (
 
-    <div className="card">
+    <div className="card chart-card">
 
       <div className="card-title">
         Monthly Cost Trend
