@@ -97,7 +97,8 @@ export default function Page() {
   <DashboardPage
     payroll={payroll}
     headcount={headcount}
-  />
+    months={months}
+/>
 )}
 
         {page === "payroll" && (
