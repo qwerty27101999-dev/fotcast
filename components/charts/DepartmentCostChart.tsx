@@ -8,22 +8,40 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  Cell,
 } from "recharts";
+
+import { formatNumber } from "@/utils/formatNumber";
+
+const COLORS = [
+
+  "#2563eb",
+
+  "#3b82f6",
+
+  "#60a5fa",
+
+  "#93c5fd",
+
+  "#bfdbfe",
+
+  "#dbeafe",
+
+];
 
 export function DepartmentCostChart({
   payroll,
 }: any) {
 
-  const departments = new Map<
-    string,
-    number
-  >();
+  const departments =
+    new Map<string, number>();
 
   payroll.forEach((employee: any) => {
 
     const total =
       employee.rows.reduce(
-        (s: number, r: any) => s + r.total,
+        (s: number, r: any) =>
+          s + r.total,
         0
       );
 
@@ -31,23 +49,29 @@ export function DepartmentCostChart({
 
       employee.department,
 
-      (departments.get(employee.department) ?? 0)
-      + total
+      (departments.get(
+        employee.department
+      ) ?? 0) + total
 
     );
 
   });
 
   const data =
-    Array.from(departments.entries())
 
-      .map(([department, total]) => ({
+    Array.from(
+      departments.entries()
+    )
 
-        department,
+      .map(
+        ([department, total]) => ({
 
-        total: Math.round(total),
+          department,
 
-      }))
+          total: Math.round(total),
+
+        })
+      )
 
       .sort(
         (a, b) =>
@@ -78,14 +102,38 @@ export function DepartmentCostChart({
               dataKey="department"
             />
 
-            <YAxis />
+            <YAxis
+              tickFormatter={(v) =>
+                formatNumber(v)
+              }
+            />
 
-            <Tooltip />
+            <Tooltip
+              formatter={(v: any) =>
+                formatNumber(v)
+              }
+            />
 
             <Bar
               dataKey="total"
-              radius={[6,6,0,0]}
-            />
+              radius={[6, 6, 0, 0]}
+            >
+
+              {data.map((_, index) => (
+
+                <Cell
+                  key={index}
+                  fill={
+                    COLORS[
+                      index %
+                        COLORS.length
+                    ]
+                  }
+                />
+
+              ))}
+
+            </Bar>
 
           </BarChart>
 
