@@ -94,8 +94,11 @@ export default function Page() {
         />
 
         {page === "dashboard" && (
-          <DashboardPage payroll={payroll} />
-        )}
+  <DashboardPage
+    payroll={payroll}
+    headcount={headcount}
+  />
+)}
 
         {page === "payroll" && (
           <PayrollPage
