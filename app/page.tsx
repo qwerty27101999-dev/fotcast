@@ -31,28 +31,32 @@ type AppPage =
   | "export";
 
 export default function Page() {
+
   const [data, setData] = useState<any[]>([]);
-  const [year, setYear] = useState(new Date().getFullYear());
+
+  const [year, setYear] =
+    useState(new Date().getFullYear());
 
   const [page, setPage] =
     useState<AppPage>("dashboard");
 
-  /**
-   * Пока используем базовый сценарий.
-   * На Build 3 ScenarioPage будет менять его.
-   */
   const [scenario, setScenario] =
-  useState(baseScenario);
+    useState(baseScenario);
 
   const months = useMemo(
     () =>
       Array.from(
         { length: 12 },
-        (_, i) => new Date(year, i, 1)
+        (_, i) =>
+          new Date(year, i, 1)
       ),
     [year]
   );
 
+  /**
+   * 🎯 SINGLE SOURCE OF TRUTH
+   * Всё строится от scenario
+   */
   const payroll = useMemo(
     () =>
       buildPayroll(
@@ -64,6 +68,11 @@ export default function Page() {
     [data, months, scenario]
   );
 
+  /**
+   * ⚠️ ВАЖНО:
+   * headcount пока НЕ сценарный
+   * (в Build 3.4 будем расширять под hiringMultiplier)
+   */
   const headcount = useMemo(
     () =>
       buildHeadcount(
@@ -73,6 +82,17 @@ export default function Page() {
       ),
     [data, months]
   );
+
+  /**
+   * 📦 EXPORT теперь тоже сценарный
+   */
+  const handleExport = () => {
+    exportPayroll(
+      payroll,
+      months,
+      year
+    );
+  };
 
   return (
     <div className="app-layout">
@@ -91,16 +111,16 @@ export default function Page() {
           setYear={setYear}
           payroll={payroll}
           months={months}
-          onExport={exportPayroll}
+          onExport={handleExport}
         />
 
         {page === "dashboard" && (
-  <DashboardPage
-    payroll={payroll}
-    headcount={headcount}
-    months={months}
-/>
-)}
+          <DashboardPage
+            payroll={payroll}
+            headcount={headcount}
+            months={months}
+          />
+        )}
 
         {page === "payroll" && (
           <PayrollPage
@@ -118,12 +138,9 @@ export default function Page() {
 
         {page === "scenario" && (
           <ScenarioPage
-
-    scenario={scenario}
-
-    setScenario={setScenario}
-
-/>
+            scenario={scenario}
+            setScenario={setScenario}
+          />
         )}
 
         {page === "company" && (

@@ -8,7 +8,9 @@ import {
   PayrollRow,
 } from "./types";
 
-function normalizeDate(date: Date | null): Date | null {
+import { Scenario } from "./scenario";
+
+function normalizeDate(date: Date | null): Date |null {
   if (!date) return null;
 
   return new Date(
@@ -18,8 +20,6 @@ function normalizeDate(date: Date | null): Date | null {
   );
 }
 
-import { Scenario } from "./scenario";
-
 export function buildPayroll(
   data: Employee[],
   months: Date[],
@@ -27,23 +27,31 @@ export function buildPayroll(
   scenario: Scenario
 ): PayrollEmployee[] {
 
-  return data.map((emp) => {
+  return data.map(employee => {
 
     const hire = normalizeDate(
-      parseExcelDate(emp.hire_date)
+      parseExcelDate(employee.hire_date)
     );
 
     const termination = normalizeDate(
-      parseExcelDate(emp.termination_date)
+      parseExcelDate(employee.termination_date)
     );
 
-    const salary = toNumber(emp.salary);
+    const salary =
+      toNumber(employee.salary) *
+      scenario.salaryMultiplier;
 
-    const monthlyBonus = toNumber(emp.monthly_bonus);
+    const monthlyBonus =
+      toNumber(employee.monthly_bonus) *
+      scenario.monthlyBonusMultiplier;
 
-    const quarterlyBonus = toNumber(emp.quarterly_bonus);
+    const quarterlyBonus =
+      toNumber(employee.quarterly_bonus) *
+      scenario.quarterlyBonusMultiplier;
 
-    const annualBonus = toNumber(emp.annual_bonus);
+    const annualBonus =
+      toNumber(employee.annual_bonus) *
+      scenario.annualBonusMultiplier;
 
     let cumulativeBase = 0;
 
@@ -51,39 +59,63 @@ export function buildPayroll(
 
     for (const month of months) {
 
-      const period = getEmploymentPeriod(
+      const employment = getEmploymentPeriod(
         hire,
         termination,
         month
       );
 
-      if (!period.active) {
+      if (!employment.active) {
+
         rows.push(emptyRow());
+
         continue;
+
       }
 
-      const payroll = calculateCalendarPayroll({
+      const payroll =
+        calculateCalendarPayroll({
 
-        salary,
+          salary,
 
-        monthlyBonus,
+          monthlyBonus,
 
-        quarterlyBonus,
+          quarterlyBonus,
 
-        annualBonus,
+          annualBonus,
 
-        workedDays: period.workedDays,
+          workedDays:
+            employment.workedDays,
 
-        totalDays: period.monthDays,
+          totalDays:
+            employment.monthDays,
 
-        month: month.getMonth(),
+          month:
+            month.getMonth(),
 
-      });
+        });
 
-      const insurance = calculateInsurance(
-        payroll.fot,
-        cumulativeBase
-      );
+      const insurance =
+        scenario.insuranceEnabled
+
+          ? calculateInsurance(
+              payroll.fot,
+              cumulativeBase
+            )
+
+          : {
+
+              ops: 0,
+
+              oms: 0,
+
+              vnim: 0,
+
+              nsipz: 0,
+
+              total: 0,
+
+            };
 
       cumulativeBase += payroll.fot;
 
@@ -91,18 +123,27 @@ export function buildPayroll(
 
         fot: round(payroll.fot),
 
-        fixedPay: round(payroll.fixedPay),
+        fixedPay: round(
+          payroll.fixedPay
+        ),
 
-        monthlyBonus: round(payroll.monthlyBonus),
+        monthlyBonus: round(
+          payroll.monthlyBonus
+        ),
 
-        quarterlyBonus: round(payroll.quarterlyBonus),
+        quarterlyBonus: round(
+          payroll.quarterlyBonus
+        ),
 
-        annualBonus: round(payroll.annualBonus),
+        annualBonus: round(
+          payroll.annualBonus
+        ),
 
         insurance,
 
         total: round(
-          payroll.fot + insurance.total
+          payroll.fot +
+          insurance.total
         ),
 
       });
@@ -111,9 +152,10 @@ export function buildPayroll(
 
     return {
 
-      name: emp.name,
+      name: employee.name,
 
-      department: emp.department || "—",
+      department:
+        employee.department || "—",
 
       rows,
 
@@ -157,20 +199,25 @@ function emptyRow(): PayrollRow {
 
 }
 
-function round(value: number): number {
+function round(value: number) {
   return Math.round(value);
 }
 
 function toNumber(value: any): number {
 
-  if (value === null || value === undefined) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
     return 0;
   }
 
   return Number(
+
     String(value)
       .replace(/\s/g, "")
       .replace(",", ".")
+
   ) || 0;
 
 }
