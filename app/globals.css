@@ -393,3 +393,34 @@ color:#16a34a;
 color:#dc2626;
 
 }
+.dashboard-filter{
+
+display:flex;
+
+gap:28px;
+
+align-items:flex-end;
+
+margin:24px 0;
+
+padding:18px;
+
+border:1px solid #262626;
+
+border-radius:12px;
+
+background:#121212;
+
+}
+
+.dashboard-filter label{
+
+display:block;
+
+font-size:12px;
+
+color:#9ca3af;
+
+margin-bottom:6px;
+
+}
