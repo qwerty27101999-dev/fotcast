@@ -364,3 +364,32 @@ grid-template-columns:1fr;
 height:100%;
 
 }
+/* KPI trends */
+
+.kpi-trend{
+
+margin-top:8px;
+
+font-size:12px;
+
+font-weight:600;
+
+display:flex;
+
+align-items:center;
+
+gap:6px;
+
+}
+
+.kpi-trend.up{
+
+color:#16a34a;
+
+}
+
+.kpi-trend.down{
+
+color:#dc2626;
+
+}

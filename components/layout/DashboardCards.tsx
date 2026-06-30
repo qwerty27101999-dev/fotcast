@@ -6,71 +6,129 @@ export function DashboardCards({
   headcount,
 }: any) {
 
-  // нормализуем headcount в безопасный массив чисел
   const monthlyHeadcount: number[] = Array.from(
     { length: 12 },
     (_, month) =>
-      (headcount || []).reduce((sum: number, dep: any) => {
-        const val = Number(dep?.[month] ?? 0);
-        return sum + (isNaN(val) ? 0 : val);
-      }, 0)
+      (headcount || []).reduce(
+        (sum: number, dep: any) =>
+          sum + Number(dep?.[month] ?? 0),
+        0
+      )
   );
 
-  const metrics = buildDashboardMetrics(
-    payroll,
-    monthlyHeadcount
-  );
+  const metrics =
+    buildDashboardMetrics(
+      payroll,
+      monthlyHeadcount
+    );
+
+  const cards = [
+
+    {
+      title: "Total Cost",
+      value: metrics.totalCost,
+      trend: null,
+      type: "currency",
+    },
+
+    {
+      title: "Payroll",
+      value: metrics.totalFOT,
+      trend: null,
+      type: "currency",
+    },
+
+    {
+      title: "Insurance",
+      value: metrics.insurance,
+      trend: null,
+      type: "currency",
+    },
+
+    {
+      title: "Average HC",
+      value: Math.round(
+        metrics.avgHeadcount
+      ),
+      trend: null,
+      type: "headcount",
+    },
+
+    {
+      title: "Peak HC",
+      value: metrics.peakHeadcount,
+      trend: null,
+      type: "headcount",
+    },
+
+    {
+      title: "Avg Cost / Employee",
+      value: Math.round(
+        metrics.avgCostPerEmployee
+      ),
+      trend: null,
+      type: "currency",
+    },
+
+  ];
 
   return (
+
     <div className="kpi-row">
 
-      <div className="card">
-        <div className="card-title">Total Cost</div>
-        <div className="card-value num">
-          {formatNumber(metrics.totalCost)}
-        </div>
-      </div>
+      {cards.map((card) => (
 
-      <div className="card">
-        <div className="card-title">Payroll</div>
-        <div className="card-value num">
-          {formatNumber(metrics.totalFOT)}
-        </div>
-      </div>
+        <div
+          key={card.title}
+          className="card"
+        >
 
-      <div className="card">
-        <div className="card-title">Insurance</div>
-        <div className="card-value num">
-          {formatNumber(metrics.insurance)}
-        </div>
-      </div>
+          <div className="card-title">
 
-      <div className="card">
-        <div className="card-title">Avg HC</div>
-        <div className="card-value num">
-          {formatNumber(Math.round(metrics.avgHeadcount))}
-        </div>
-      </div>
+            {card.title}
 
-      <div className="card">
-        <div className="card-title">Peak HC</div>
-        <div className="card-value num">
-          {formatNumber(metrics.peakHeadcount)}
-        </div>
-      </div>
+          </div>
 
-      <div className="card">
-        <div className="card-title">
-          Avg Cost / Employee
-        </div>
+          <div className="card-value num">
 
-        <div className="card-value num">
-          {formatNumber(
-            Math.round(metrics.avgCostPerEmployee)
+            {formatNumber(card.value)}
+
+            {card.type === "currency"
+              ? " ₽"
+              : ""}
+
+          </div>
+
+          {card.trend !== null && (
+
+            <div
+              className={
+                card.trend >= 0
+                  ? "kpi-trend up"
+                  : "kpi-trend down"
+              }
+            >
+
+              {card.trend >= 0
+                ? "▲"
+                : "▼"}
+
+              {" "}
+
+              {Math.abs(card.trend)}%
+
+              {" · vs previous month"}
+
+            </div>
+
           )}
+
         </div>
-      </div>
+
+      ))}
 
     </div>
+
   );
+
 }
