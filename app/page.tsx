@@ -41,7 +41,8 @@ export default function Page() {
    * Пока используем базовый сценарий.
    * На Build 3 ScenarioPage будет менять его.
    */
-  const scenario = baseScenario;
+  const [scenario, setScenario] =
+  useState(baseScenario);
 
   const months = useMemo(
     () =>
@@ -116,7 +117,13 @@ export default function Page() {
         )}
 
         {page === "scenario" && (
-          <ScenarioPage />
+          <ScenarioPage
+
+    scenario={scenario}
+
+    setScenario={setScenario}
+
+/>
         )}
 
         {page === "company" && (
