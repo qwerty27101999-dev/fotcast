@@ -14,69 +14,17 @@ import {
 import { formatNumber } from "@/utils/formatNumber";
 
 const COLORS = [
-
   "#2563eb",
-
   "#3b82f6",
-
   "#60a5fa",
-
   "#93c5fd",
-
   "#bfdbfe",
-
   "#dbeafe",
-
 ];
 
 export function DepartmentCostChart({
-  payroll,
+  data,
 }: any) {
-
-  const departments =
-    new Map<string, number>();
-
-  payroll.forEach((employee: any) => {
-
-    const total =
-      employee.rows.reduce(
-        (s: number, r: any) =>
-          s + r.total,
-        0
-      );
-
-    departments.set(
-
-      employee.department,
-
-      (departments.get(
-        employee.department
-      ) ?? 0) + total
-
-    );
-
-  });
-
-  const data =
-
-    Array.from(
-      departments.entries()
-    )
-
-      .map(
-        ([department, total]) => ({
-
-          department,
-
-          total: Math.round(total),
-
-        })
-      )
-
-      .sort(
-        (a, b) =>
-          b.total - a.total
-      );
 
   return (
 
@@ -92,9 +40,7 @@ export function DepartmentCostChart({
 
         <ResponsiveContainer>
 
-          <BarChart
-            data={data}
-          >
+          <BarChart data={data}>
 
             <CartesianGrid />
 
@@ -119,7 +65,7 @@ export function DepartmentCostChart({
               radius={[6, 6, 0, 0]}
             >
 
-              {data.map((_, index) => (
+              {data.map((_: any, index: number) => (
 
                 <Cell
                   key={index}

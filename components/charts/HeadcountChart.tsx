@@ -18,17 +18,13 @@ import {
 
 } from "recharts";
 
-import { buildMonthlyHeadcount }
-from "@/lib/dashboard/headcountMetrics";
-
 export function HeadcountChart({
-  headcount,
+
+  data,
+
 }: any) {
 
-  const metrics =
-    buildMonthlyHeadcount(headcount);
-
-  const data = metrics.map((m) => ({
+  const chartData = data.map((m: any) => ({
 
     month: new Date(
       2025,
@@ -47,16 +43,16 @@ export function HeadcountChart({
     <div className="card chart-card">
 
       <div className="card-title">
+
         Headcount Trend
+
       </div>
 
       <div style={{ height: 340 }}>
 
         <ResponsiveContainer>
 
-          <LineChart
-            data={data}
-          >
+          <LineChart data={chartData}>
 
             <CartesianGrid />
 

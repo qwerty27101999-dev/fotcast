@@ -1,22 +1,28 @@
 "use client";
 
 import {
+
   LineChart,
+
   Line,
+
   CartesianGrid,
+
   ResponsiveContainer,
+
   Tooltip,
+
   XAxis,
+
   YAxis,
+
 } from "recharts";
 
-import { buildMonthlyMetrics } from "@/lib/dashboard/monthlyMetrics";
-
 export function MonthlyCostChart({
-  payroll,
-}: any) {
 
-  const data = buildMonthlyMetrics(payroll);
+  data,
+
+}: any) {
 
   const chartData = data.map((m: any) => ({
 
@@ -41,16 +47,16 @@ export function MonthlyCostChart({
     <div className="card chart-card">
 
       <div className="card-title">
+
         Monthly Cost Trend
+
       </div>
 
       <div style={{ height: 340 }}>
 
         <ResponsiveContainer>
 
-          <LineChart
-            data={chartData}
-          >
+          <LineChart data={chartData}>
 
             <CartesianGrid />
 

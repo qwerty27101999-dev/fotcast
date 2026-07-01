@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import { DashboardCards } from "../layout/DashboardCards";
 
 import { MonthlyCostChart } from "../charts/MonthlyCostChart";
@@ -7,64 +5,29 @@ import { HeadcountChart } from "../charts/HeadcountChart";
 import { DepartmentCostChart } from "../charts/DepartmentCostChart";
 import { CostStructureChart } from "../charts/CostStructureChart";
 
-type DashboardView =
-  | "monthly"
-  | "quarterly"
-  | "yearly";
+import { buildDashboardData } from "@/lib/dashboard/dashboardEngine";
 
 export function DashboardPage({
+
   payroll,
+
   headcount,
+
 }: any) {
 
-  const [view, setView] =
-    useState<DashboardView>("monthly");
+  const dashboard = buildDashboardData(
+
+    payroll,
+
+    headcount
+
+  );
 
   return (
 
     <>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 20,
-        }}
-      >
-
-        <h2
-          style={{
-            margin: 0,
-          }}
-        >
-          Dashboard
-        </h2>
-
-        <select
-          value={view}
-          onChange={(e) =>
-            setView(
-              e.target.value as DashboardView
-            )
-          }
-        >
-
-          <option value="monthly">
-            Monthly
-          </option>
-
-          <option value="quarterly">
-            Quarterly (coming soon)
-          </option>
-
-          <option value="yearly">
-            Yearly (coming soon)
-          </option>
-
-        </select>
-
-      </div>
+      <h2>Dashboard</h2>
 
       <DashboardCards
         payroll={payroll}
@@ -76,7 +39,7 @@ export function DashboardPage({
         <div className="dashboard-row">
 
           <MonthlyCostChart
-            payroll={payroll}
+            data={dashboard.monthly}
           />
 
         </div>
@@ -84,11 +47,11 @@ export function DashboardPage({
         <div className="dashboard-row two">
 
           <HeadcountChart
-            headcount={headcount}
+            data={dashboard.headcountTrend}
           />
 
           <CostStructureChart
-            payroll={payroll}
+            data={dashboard.structure}
           />
 
         </div>
@@ -96,7 +59,7 @@ export function DashboardPage({
         <div className="dashboard-row">
 
           <DepartmentCostChart
-            payroll={payroll}
+            data={dashboard.departmentData}
           />
 
         </div>
