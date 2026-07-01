@@ -424,3 +424,32 @@ color:#9ca3af;
 margin-bottom:6px;
 
 }
+.dashboard-filters {
+
+  display: flex;
+
+  gap: 18px;
+
+  align-items: end;
+
+  margin-bottom: 22px;
+
+}
+
+.dashboard-filters label {
+
+  display: block;
+
+  font-size: 12px;
+
+  color: #888;
+
+  margin-bottom: 6px;
+
+}
+
+.dashboard-filters select {
+
+  min-width: 170px;
+
+}
