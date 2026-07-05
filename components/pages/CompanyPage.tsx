@@ -1,16 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
-import { Employee } from "@/lib/types";
 import { CompanyDataset } from "@/lib/company/companyTypes";
+import { Employee } from "@/lib/types";
 
-import { CompanyHeader } from "../company/CompanyHeader";
-import { CompanyToolbar } from "../company/CompanyToolbar";
-import { CompanyTable } from "../company/CompanyTable";
-import { EmployeeDrawer } from "../company/EmployeeDrawer";
+import { useTable } from "@/lib/table/useTable";
 
-interface CompanyPageProps {
+import { companyColumns, CompanyTable } from "@/components/company/CompanyTable";
+import { CompanyHeader } from "@/components/company/CompanyHeader";
+import { EmployeeDrawer } from "@/components/company/EmployeeDrawer";
+
+import { TableFilters } from "@/components/tables/TableFilters";
+
+interface Props {
 
   company: CompanyDataset;
 
@@ -20,89 +23,88 @@ export function CompanyPage({
 
   company,
 
-}: CompanyPageProps) {
+}: Props) {
 
-  const [search, setSearch] =
-    useState("");
+  const [
 
-  const [department, setDepartment] =
-    useState("All");
+    selectedEmployee,
 
-  const [selectedEmployee, setSelectedEmployee] =
-    useState<Employee | null>(null);
+    setSelectedEmployee,
 
-  const filteredEmployees =
-    useMemo(() => {
+  ] = useState<Employee | null>(null);
 
-      return company.employees.filter(employee => {
+  const table = useTable(
 
-        const matchName =
-          employee.name
-            .toLowerCase()
-            .includes(search.toLowerCase());
+    company.employees,
 
-        const matchDepartment =
-          department === "All"
-            ? true
-            : employee.department === department;
+    companyColumns
 
-        return (
-          matchName &&
-          matchDepartment
-        );
-
-      });
-
-    }, [
-      company,
-      search,
-      department,
-    ]);
+  );
 
   return (
 
     <>
 
-      <h2>Company</h2>
+      <h2>
+
+        Company
+
+      </h2>
 
       <CompanyHeader
+
         company={company}
+
       />
 
-      <CompanyToolbar
+      
 
-        search={search}
+      <TableFilters
 
-        setSearch={setSearch}
+        search={table.search}
 
-        department={department}
+        onSearchChange={table.setSearch}
 
-        setDepartment={setDepartment}
+        sortField={table.sortField}
 
-        departments={company.departments}
+        onSortFieldChange={table.setSortField}
 
-        totalEmployees={
-          company.employees.length
-        }
+        ascending={table.ascending}
 
-        filteredEmployees={
-          filteredEmployees.length
-        }
+        onAscendingChange={table.setAscending}
+
+        sortOptions={companyColumns
+
+          .filter(c => c.sortable)
+
+          .map(c => ({
+
+            value: String(c.id),
+
+            label: c.title,
+
+          }))}
 
       />
 
       <CompanyTable
-  employees={filteredEmployees}
-  selectedEmployee={selectedEmployee}
-  onSelect={setSelectedEmployee}
-/>
+
+        employees={table.rows}
+
+        selectedEmployee={selectedEmployee}
+
+        onSelect={setSelectedEmployee}
+
+      />
 
       <EmployeeDrawer
 
         employee={selectedEmployee}
 
         onClose={() =>
+
           setSelectedEmployee(null)
+
         }
 
       />

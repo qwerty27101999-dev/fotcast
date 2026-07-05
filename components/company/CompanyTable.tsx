@@ -1,24 +1,131 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
 import { Employee } from "@/lib/types";
+
+import { DataTable } from "@/components/tables/DataTable";
+
+import { Column } from "@/lib/table/tableTypes";
 
 import { formatMoney } from "@/utils/formatMoney";
 import { formatDate } from "@/utils/formatDate";
-import { parseExcelDate } from "@/utils/date";
 
 interface Props {
+
   employees: Employee[];
+
   selectedEmployee: Employee | null;
+
   onSelect: (employee: Employee) => void;
+
 }
 
-type SortField =
-  | "name"
-  | "department"
-  | "salary"
-  | "hire_date";
+export const companyColumns: Column<Employee>[] = [
+
+  {
+
+    id: "name",
+
+    title: "Name",
+
+    sortable: true,
+
+    searchable: true,
+
+  },
+
+  {
+
+    id: "department",
+
+    title: "Department",
+
+    sortable: true,
+
+    searchable: true,
+
+  },
+
+  {
+
+    id: "hire_date",
+
+    title: "Hire Date",
+
+    sortable: true,
+
+    render: (row) => formatDate(row.hire_date),
+
+  },
+
+  {
+
+    id: "termination_date",
+
+    title: "Termination",
+
+    sortable: true,
+
+    render: (row) => formatDate(row.termination_date),
+
+  },
+
+  {
+
+    id: "salary",
+
+    title: "Salary",
+
+    sortable: true,
+
+    numeric: true,
+
+    render: (row) => formatMoney(row.salary),
+
+  },
+
+  {
+
+    id: "monthly_bonus",
+
+    title: "Monthly Bonus",
+
+    sortable: true,
+
+    numeric: true,
+
+    render: (row) => formatMoney(row.monthly_bonus),
+
+  },
+
+  {
+
+    id: "quarterly_bonus",
+
+    title: "Quarterly Bonus",
+
+    sortable: true,
+
+    numeric: true,
+
+    render: (row) => formatMoney(row.quarterly_bonus),
+
+  },
+
+  {
+
+    id: "annual_bonus",
+
+    title: "Annual Bonus",
+
+    sortable: true,
+
+    numeric: true,
+
+    render: (row) => formatMoney(row.annual_bonus),
+
+  },
+
+];
 
 export function CompanyTable({
 
@@ -30,253 +137,19 @@ export function CompanyTable({
 
 }: Props) {
 
-  const [sortField, setSortField] =
-    useState<SortField>("name");
-
-  const [ascending, setAscending] =
-    useState(true);
-
-  function changeSort(field: SortField) {
-
-    if (field === sortField) {
-
-      setAscending(!ascending);
-
-      return;
-
-    }
-
-    setSortField(field);
-
-    setAscending(true);
-
-  }
-
-  const sortedEmployees =
-    useMemo(() => {
-
-      const rows = [...employees];
-
-      rows.sort((a, b) => {
-
-        let result = 0;
-
-        switch (sortField) {
-
-          case "name":
-
-            result =
-              a.name.localeCompare(b.name);
-
-            break;
-
-          case "department":
-
-            result =
-              (a.department ?? "").localeCompare(
-                b.department ?? ""
-              );
-
-            break;
-
-          case "salary":
-
-            result =
-              Number(a.salary) -
-              Number(b.salary);
-
-            break;
-
-          case "hire_date":
-
-            result =
-              (parseExcelDate(a.hire_date)?.getTime() ?? 0)
-              -
-              (parseExcelDate(b.hire_date)?.getTime() ?? 0);
-
-            break;
-
-        }
-
-        return ascending
-          ? result
-          : -result;
-
-      });
-
-      return rows;
-
-    }, [
-
-      employees,
-
-      sortField,
-
-      ascending,
-
-    ]);
-
-  function Arrow(field: SortField) {
-
-    if (field !== sortField)
-      return "⇅";
-
-    return ascending
-      ? "▲"
-      : "▼";
-
-  }
-
   return (
 
-    <div
-      className="card"
-      style={{
-        marginTop: 20,
-        overflow: "auto",
-        maxHeight: "72vh",
-        padding: 0,
-      }}
-    >
+    <DataTable
 
-      <table
-        className="table"
-        style={{
-          background: "#fff",
-          color: "#111827",
-        }}
-      >
+      columns={companyColumns}
 
-        <thead
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 5,
-            background: "#f8fafc",
-          }}
-        >
+      rows={employees}
 
-          <tr>
+      selectedRow={selectedEmployee}
 
-            <th onClick={() => changeSort("name")} style={{ cursor: "pointer" }}>
-              Name {Arrow("name")}
-            </th>
+      onRowClick={onSelect}
 
-            <th onClick={() => changeSort("department")} style={{ cursor: "pointer" }}>
-              Department {Arrow("department")}
-            </th>
-
-            <th onClick={() => changeSort("hire_date")} style={{ cursor: "pointer" }}>
-              Hire Date {Arrow("hire_date")}
-            </th>
-
-            <th>
-              Termination
-            </th>
-
-            <th onClick={() => changeSort("salary")} style={{ cursor: "pointer" }}>
-              Salary {Arrow("salary")}
-            </th>
-
-            <th>
-              Monthly Bonus
-            </th>
-
-            <th>
-              Quarterly Bonus
-            </th>
-
-            <th>
-              Annual Bonus
-            </th>
-
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          {sortedEmployees.map((employee, index) => {
-
-            const selected =
-              selectedEmployee?.name ===
-              employee.name;
-
-            return (
-
-              <tr
-  key={index}
-  onClick={() => onSelect(employee)}
-  className={
-    selected
-      ? "company-row company-row-selected"
-      : "company-row"
-  }
-  style={{
-    background:
-      selected
-        ? "#dbeafe"
-        : index % 2
-          ? "#f8fafc"
-          : "#ffffff",
-  }}
->
-
-                <td style={{ color: "#111827" }}>
-                  {employee.name}
-                </td>
-
-                <td style={{ color: "#111827" }}>
-                  {employee.department}
-                </td>
-
-                <td style={{ color: "#111827" }}>
-                  {formatDate(employee.hire_date)}
-                </td>
-
-                <td style={{ color: "#111827" }}>
-                  {formatDate(employee.termination_date)}
-                </td>
-
-                <td
-                  className="num"
-                  style={{ color: "#111827" }}
-                >
-                  {formatMoney(employee.salary)}
-                </td>
-
-                <td
-                  className="num"
-                  style={{ color: "#111827" }}
-                >
-                  {formatMoney(employee.monthly_bonus)}
-                </td>
-
-                <td
-                  className="num"
-                  style={{ color: "#111827" }}
-                >
-                  {formatMoney(employee.quarterly_bonus)}
-                </td>
-
-                <td
-                  className="num"
-                  style={{ color: "#111827" }}
-                >
-                  {formatMoney(employee.annual_bonus)}
-                </td>
-
-              </tr>
-
-            );
-
-          })}
-
-        </tbody>
-
-      </table>
-
-    </div>
+    />
 
   );
 
