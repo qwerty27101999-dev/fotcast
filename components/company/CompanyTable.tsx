@@ -205,52 +205,22 @@ export function CompanyTable({
             return (
 
               <tr
-
-                key={index}
-
-                onClick={() =>
-                  onSelect(employee)
-                }
-
-                style={{
-
-                  color: "#111827",
-
-                  cursor: "pointer",
-
-                  background:
-                    selected
-                      ? "#dbeafe"
-                      : index % 2
-                        ? "#f8fafc"
-                        : "#ffffff",
-
-                  transition:
-                    "background .15s",
-
-                }}
-
-                onMouseEnter={(e) => {
-
-                  if (!selected)
-
-                    e.currentTarget.style.background =
-                      "#e0f2fe";
-
-                }}
-
-                onMouseLeave={(e) => {
-
-                  if (!selected)
-
-                    e.currentTarget.style.background =
-                      index % 2
-                        ? "#f8fafc"
-                        : "#ffffff";
-
-                }}
-
-              >
+  key={index}
+  onClick={() => onSelect(employee)}
+  className={
+    selected
+      ? "company-row company-row-selected"
+      : "company-row"
+  }
+  style={{
+    background:
+      selected
+        ? "#dbeafe"
+        : index % 2
+          ? "#f8fafc"
+          : "#ffffff",
+  }}
+>
 
                 <td style={{ color: "#111827" }}>
                   {employee.name}
