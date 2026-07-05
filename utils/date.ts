@@ -1,16 +1,38 @@
-export function parseExcelDate(value: any) {
-  if (!value) return null;
+export function parseExcelDate(
+  value: unknown
+): Date | null {
 
-  // Excel numeric format
-  if (typeof value === "number") {
-    return new Date((value - 25569) * 86400 * 1000);
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
   }
 
-  // DD.MM.YYYY format (ВАЖНО для твоего файла)
+  if (value instanceof Date) {
+    return value;
+  }
+
+  // Excel serial number
+  if (typeof value === "number") {
+
+    const EXCEL_EPOCH = 25569;
+    const MS_PER_DAY = 86400000;
+
+    return new Date(
+      (value - EXCEL_EPOCH) * MS_PER_DAY
+    );
+
+  }
+
+  // DD.MM.YYYY
   if (typeof value === "string") {
+
     const parts = value.split(".");
 
     if (parts.length === 3) {
+
       const [day, month, year] = parts;
 
       return new Date(
@@ -18,9 +40,15 @@ export function parseExcelDate(value: any) {
         Number(month) - 1,
         Number(day)
       );
+
     }
+
   }
 
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? null : d;
+  const date = new Date(value as string);
+
+  return Number.isNaN(date.getTime())
+    ? null
+    : date;
+
 }

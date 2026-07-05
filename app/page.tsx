@@ -9,6 +9,7 @@ import { parseExcelDate } from "@/utils/date";
 import { exportPayroll } from "@/utils/exportExcel";
 
 import { baseScenario } from "@/lib/scenario";
+import { Employee } from "@/lib/types";
 
 import { Toolbar } from "@/components/layout/Toolbar";
 
@@ -32,7 +33,8 @@ type AppPage =
 
 export default function Page() {
 
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] =
+    useState<Employee[]>([]);
 
   const [year, setYear] =
     useState(new Date().getFullYear());
@@ -53,10 +55,6 @@ export default function Page() {
     [year]
   );
 
-  /**
-   * 🎯 SINGLE SOURCE OF TRUTH
-   * Всё строится от scenario
-   */
   const payroll = useMemo(
     () =>
       buildPayroll(
@@ -68,11 +66,6 @@ export default function Page() {
     [data, months, scenario]
   );
 
-  /**
-   * ⚠️ ВАЖНО:
-   * headcount пока НЕ сценарный
-   * (в Build 3.4 будем расширять под hiringMultiplier)
-   */
   const headcount = useMemo(
     () =>
       buildHeadcount(
@@ -83,9 +76,6 @@ export default function Page() {
     [data, months]
   );
 
-  /**
-   * 📦 EXPORT теперь тоже сценарный
-   */
   const handleExport = () => {
     exportPayroll(
       payroll,
@@ -116,10 +106,9 @@ export default function Page() {
 
         {page === "dashboard" && (
           <DashboardPage
-            payroll={payroll}
-            headcount={headcount}
-            months={months}
-          />
+  payroll={payroll}
+  headcount={headcount}
+/>
         )}
 
         {page === "payroll" && (

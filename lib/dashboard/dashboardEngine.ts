@@ -1,11 +1,14 @@
+import { PayrollEmployee } from "../types";
+
 import { buildMonthlyMetrics } from "./monthlyMetrics";
 import { buildMonthlyHeadcount } from "./headcountMetrics";
 
 export function buildDashboardData(
-  payroll: any[],
+  payroll: PayrollEmployee[],
   headcount: any[]
 ) {
-  const monthly = buildMonthlyMetrics(payroll);
+  const monthly =
+    buildMonthlyMetrics(payroll);
 
   const headcountTrend =
     buildMonthlyHeadcount(headcount);
@@ -15,12 +18,35 @@ export function buildDashboardData(
     number
   >();
 
-  payroll.forEach((employee: any) => {
+  let fixed = 0;
+  let monthlyBonus = 0;
+  let quarterlyBonus = 0;
+  let annualBonus = 0;
+  let insurance = 0;
 
-    const total =
+  payroll.forEach((employee) => {
+
+    const employeeTotal =
       employee.rows.reduce(
-        (sum: number, row: any) =>
-          sum + row.total,
+        (sum, row) => {
+
+          fixed += row.fixedPay;
+
+          monthlyBonus +=
+            row.monthlyBonus;
+
+          quarterlyBonus +=
+            row.quarterlyBonus;
+
+          annualBonus +=
+            row.annualBonus;
+
+          insurance +=
+            row.insurance.total;
+
+          return sum + row.total;
+
+        },
         0
       );
 
@@ -28,55 +54,26 @@ export function buildDashboardData(
 
       employee.department,
 
-      (departments.get(employee.department) ?? 0)
-      + total
+      (departments.get(
+        employee.department
+      ) ?? 0) + employeeTotal
 
     );
 
   });
 
   const departmentData =
-
-    Array.from(
-      departments.entries()
-    )
+    Array.from(departments.entries())
 
       .map(([department, total]) => ({
-
         department,
-
         total,
-
       }))
 
       .sort(
         (a, b) =>
           b.total - a.total
       );
-
-  let fixed = 0;
-  let monthlyBonus = 0;
-  let quarterlyBonus = 0;
-  let annualBonus = 0;
-  let insurance = 0;
-
-  payroll.forEach((employee: any) => {
-
-    employee.rows.forEach((row: any) => {
-
-      fixed += row.fixedPay;
-
-      monthlyBonus += row.monthlyBonus;
-
-      quarterlyBonus += row.quarterlyBonus;
-
-      annualBonus += row.annualBonus;
-
-      insurance += row.insurance.total;
-
-    });
-
-  });
 
   const structure = [
 
@@ -105,7 +102,9 @@ export function buildDashboardData(
       value: insurance,
     },
 
-  ].filter(x => x.value > 0);
+  ].filter(
+    (item) => item.value > 0
+  );
 
   return {
 

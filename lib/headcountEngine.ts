@@ -1,48 +1,48 @@
-import { getEmploymentPeriod } from "./calendarEngine";
+import { Employee } from "./types";
+
+export interface HeadcountRow {
+  dep: string;
+  [month: number]: number | string;
+}
 
 export function buildHeadcount(
-  data: any[],
+  data: Employee[],
   months: Date[],
   parseExcelDate: (v: any) => Date | null
-) {
+): HeadcountRow[] {
   const departments = Array.from(
-    new Set(
-      data.map((emp) => emp.department || "—")
-    )
+    new Set(data.map(emp => emp.department || "—"))
   );
 
-  return departments.map((dep) => {
-
-    const row: any = {
+  return departments.map(dep => {
+    const row: HeadcountRow = {
       dep,
     };
 
     months.forEach((month, index) => {
+      const monthEnd = new Date(
+        month.getFullYear(),
+        month.getMonth() + 1,
+        0
+      );
 
-      row[index] = data.filter((emp) => {
-
-        if ((emp.department || "—") !== dep)
-          return false;
+      row[index] = data.filter(emp => {
+        if ((emp.department || "—") !== dep) return false;
 
         const hire = parseExcelDate(emp.hire_date);
-        const termination = parseExcelDate(
-          emp.termination_date
-        );
+        const termination = parseExcelDate(emp.termination_date);
 
-        const employment =
-          getEmploymentPeriod(
-            hire,
-            termination,
-            month
-          );
+        if (!hire) return false;
 
-        return employment.active;
+        if (hire > monthEnd) return false;
 
+        if (termination && termination <= monthEnd)
+          return false;
+
+        return true;
       }).length;
-
     });
 
     return row;
-
   });
 }

@@ -21,6 +21,10 @@ export interface PayrollCalculationResult {
   fot: number;
 }
 
+const QUARTER_MONTHS = [2, 5, 8, 11];
+
+const ANNUAL_BONUS_MONTH = 11;
+
 export function calculateCalendarPayroll(
   input: PayrollCalculationInput
 ): PayrollCalculationResult {
@@ -42,12 +46,11 @@ export function calculateCalendarPayroll(
       : 0;
 
   const annualBonus =
-    input.month === 11
+    input.month === ANNUAL_BONUS_MONTH
       ? input.annualBonus * ratio
       : 0;
 
   return {
-
     fixedPay,
 
     monthlyBonus,
@@ -61,10 +64,9 @@ export function calculateCalendarPayroll(
       monthlyBonus +
       quarterlyBonus +
       annualBonus,
-
   };
 }
 
 function isQuarterMonth(month: number) {
-  return [2, 5, 8, 11].includes(month);
+  return QUARTER_MONTHS.includes(month);
 }

@@ -1,41 +1,81 @@
+import { PayrollEmployee } from "@/lib/types";
+
 import { formatNumber } from "@/utils/formatNumber";
 
-export function PayrollTable({ payroll, months }: any) {
+interface PayrollTableProps {
+  payroll: PayrollEmployee[];
+  months: Date[];
+}
+
+export function PayrollTable({
+  payroll,
+  months,
+}: PayrollTableProps) {
   return (
     <table className="table">
 
       <thead>
+
         <tr>
+
           <th>Name</th>
 
-          {months.map((m: any, i: number) => (
-            <th key={i}>
-              {m.toLocaleString("ru", { month: "short" })}
+          {months.map((month) => (
+
+            <th key={month.getMonth()}>
+
+              {month.toLocaleString("ru", {
+                month: "short",
+              })}
+
             </th>
+
           ))}
 
           <th>Total</th>
+
         </tr>
+
       </thead>
 
       <tbody>
-        {payroll.map((p: any, i: number) => (
-          <tr key={i}>
-            <td>{p.name}</td>
 
-            {p.rows.map((r: any, j: number) => (
-              <td key={j} className="num">
-                {formatNumber(r.total)}
+        {payroll.map((employee) => {
+
+          const total = employee.rows.reduce(
+            (sum, row) => sum + row.total,
+            0
+          );
+
+          return (
+
+            <tr key={employee.name}>
+
+              <td>{employee.name}</td>
+
+              {employee.rows.map((row, index) => (
+
+                <td
+                  key={index}
+                  className="num"
+                >
+                  {formatNumber(row.total)}
+                </td>
+
+              ))}
+
+              <td className="num">
+
+                {formatNumber(total)}
+
               </td>
-            ))}
 
-            <td className="num">
-              {formatNumber(
-                p.rows.reduce((s: number, r: any) => s + r.total, 0)
-              )}
-            </td>
-          </tr>
-        ))}
+            </tr>
+
+          );
+
+        })}
+
       </tbody>
 
     </table>

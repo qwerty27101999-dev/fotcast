@@ -1,3 +1,6 @@
+import { PayrollEmployee } from "@/lib/types";
+import { HeadcountRow } from "@/lib/headcountEngine";
+
 import { DashboardCards } from "../layout/DashboardCards";
 
 import { MonthlyCostChart } from "../charts/MonthlyCostChart";
@@ -7,26 +10,22 @@ import { CostStructureChart } from "../charts/CostStructureChart";
 
 import { buildDashboardData } from "@/lib/dashboard/dashboardEngine";
 
+interface DashboardPageProps {
+  payroll: PayrollEmployee[];
+  headcount: HeadcountRow[];
+}
+
 export function DashboardPage({
-
   payroll,
-
   headcount,
-
-}: any) {
-
+}: DashboardPageProps) {
   const dashboard = buildDashboardData(
-
     payroll,
-
     headcount
-
   );
 
   return (
-
     <>
-
       <h2>Dashboard</h2>
 
       <DashboardCards
@@ -35,17 +34,13 @@ export function DashboardPage({
       />
 
       <div className="dashboard-grid">
-
         <div className="dashboard-row">
-
           <MonthlyCostChart
             data={dashboard.monthly}
           />
-
         </div>
 
         <div className="dashboard-row two">
-
           <HeadcountChart
             data={dashboard.headcountTrend}
           />
@@ -53,21 +48,14 @@ export function DashboardPage({
           <CostStructureChart
             data={dashboard.structure}
           />
-
         </div>
 
         <div className="dashboard-row">
-
           <DepartmentCostChart
             data={dashboard.departmentData}
           />
-
         </div>
-
       </div>
-
     </>
-
   );
-
 }

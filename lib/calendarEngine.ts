@@ -5,12 +5,29 @@ export interface EmploymentPeriod {
   ratio: number;
 }
 
-function normalize(date: Date) {
+const MS_PER_DAY = 86_400_000;
+
+function normalize(date: Date): Date {
   return new Date(
     date.getFullYear(),
     date.getMonth(),
     date.getDate()
   );
+}
+
+function daysInclusive(start: Date, end: Date): number {
+  return Math.round(
+    (end.getTime() - start.getTime()) / MS_PER_DAY
+  ) + 1;
+}
+
+function emptyPeriod(monthDays: number): EmploymentPeriod {
+  return {
+    active: false,
+    workedDays: 0,
+    monthDays,
+    ratio: 0,
+  };
 }
 
 export function getMonthDays(month: Date) {
@@ -26,16 +43,10 @@ export function getMonthDays(month: Date) {
     0
   );
 
-  const monthDays =
-    Math.round(
-      (end.getTime() - start.getTime()) /
-        86400000
-    ) + 1;
-
   return {
     start,
     end,
-    monthDays,
+    monthDays: daysInclusive(start, end),
   };
 }
 
@@ -45,16 +56,11 @@ export function getEmploymentPeriod(
   month: Date
 ): EmploymentPeriod {
 
-  if (!hire) {
-    return {
-      active: false,
-      workedDays: 0,
-      monthDays: getMonthDays(month).monthDays,
-      ratio: 0,
-    };
-  }
-
   const monthInfo = getMonthDays(month);
+
+  if (!hire) {
+    return emptyPeriod(monthInfo.monthDays);
+  }
 
   const monthStart = normalize(monthInfo.start);
   const monthEnd = normalize(monthInfo.end);
@@ -77,26 +83,15 @@ export function getEmploymentPeriod(
       : monthEnd;
 
   if (start > end) {
-    return {
-      active: false,
-      workedDays: 0,
-      monthDays: monthInfo.monthDays,
-      ratio: 0,
-    };
+    return emptyPeriod(monthInfo.monthDays);
   }
 
-  const workedDays =
-    Math.round(
-      (end.getTime() - start.getTime()) /
-        86400000
-    ) + 1;
+  const workedDays = daysInclusive(start, end);
 
   return {
     active: true,
     workedDays,
     monthDays: monthInfo.monthDays,
-    ratio:
-      workedDays /
-      monthInfo.monthDays,
+    ratio: workedDays / monthInfo.monthDays,
   };
 }

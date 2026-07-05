@@ -17,64 +17,41 @@ export function calculateInsuranceByRules(
   input: InsuranceInput
 ): InsuranceResult {
 
-  const {
-    cap,
-    rates,
-  } = insuranceConfig;
+  const rates = insuranceConfig.rates;
 
   const remainingCap = Math.max(
-    cap - input.cumulativeBase,
+    insuranceConfig.cap - input.cumulativeBase,
     0
   );
 
-  let ops = 0;
-  let oms = 0;
-  let vnim = 0;
-
-  // НСиПЗ начисляется всегда
   const nsipz =
     input.base * rates.nsipz;
 
   if (remainingCap >= input.base) {
 
-    ops =
+    const ops =
       input.base * rates.ops;
 
-    oms =
+    const oms =
       input.base * rates.oms;
 
-    vnim =
+    const vnim =
       input.base * rates.vnim;
-
-  } else {
-
-    const lowBase = remainingCap;
-
-    const highBase =
-      input.base - remainingCap;
-
-    const lowRate =
-      rates.ops +
-      rates.oms +
-      rates.vnim;
-
-    const reduced =
-      highBase *
-      rates.reducedAfterCap;
 
     return {
 
-      ops: 0,
+      ops: round(ops),
 
-      oms: 0,
+      oms: round(oms),
 
-      vnim: 0,
+      vnim: round(vnim),
 
       nsipz: round(nsipz),
 
       total: round(
-        lowBase * lowRate +
-        reduced +
+        ops +
+        oms +
+        vnim +
         nsipz
       ),
 
@@ -82,20 +59,33 @@ export function calculateInsuranceByRules(
 
   }
 
+  const lowBase = remainingCap;
+
+  const highBase =
+    input.base - remainingCap;
+
+  const standardRate =
+    rates.ops +
+    rates.oms +
+    rates.vnim;
+
+  const reducedPart =
+    highBase *
+    rates.reducedAfterCap;
+
   return {
 
-    ops: round(ops),
+    ops: 0,
 
-    oms: round(oms),
+    oms: 0,
 
-    vnim: round(vnim),
+    vnim: 0,
 
     nsipz: round(nsipz),
 
     total: round(
-      ops +
-      oms +
-      vnim +
+      lowBase * standardRate +
+      reducedPart +
       nsipz
     ),
 

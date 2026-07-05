@@ -1,31 +1,59 @@
-export function HeadcountTable({ headcount, months }: any) {
+import { HeadcountRow } from "@/lib/headcountEngine";
+
+interface HeadcountTableProps {
+  headcount: HeadcountRow[];
+  months: Date[];
+}
+
+export function HeadcountTable({
+  headcount,
+  months,
+}: HeadcountTableProps) {
   return (
     <table className="table">
 
       <thead>
+
         <tr>
+
           <th>Department</th>
 
-          {months.map((m: Date, i: number) => (
-            <th key={i}>
-              {m.toLocaleString("ru", { month: "short" })}
+          {months.map((month) => (
+
+            <th key={month.getMonth()}>
+
+              {month.toLocaleString("ru", {
+                month: "short",
+              })}
+
             </th>
+
           ))}
 
         </tr>
+
       </thead>
 
       <tbody>
 
-        {headcount.map((r: any, i: number) => (
-          <tr key={i}>
-            <td>{r.dep}</td>
+        {headcount.map((department) => (
 
-            {months.map((_: Date, j: number) => (
-              <td key={j}>{r[j]}</td>
+          <tr key={department.dep}>
+
+            <td>{department.dep}</td>
+
+            {months.map((_, monthIndex) => (
+
+              <td key={monthIndex}>
+
+                {department[monthIndex]}
+
+              </td>
+
             ))}
 
           </tr>
+
         ))}
 
       </tbody>

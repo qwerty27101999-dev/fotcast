@@ -1,7 +1,6 @@
 import { PayrollEmployee } from "../types";
 
 export interface MonthlyMetric {
-
   month: number;
 
   payroll: number;
@@ -9,7 +8,6 @@ export interface MonthlyMetric {
   insurance: number;
 
   total: number;
-
 }
 
 export function buildMonthlyMetrics(
@@ -24,20 +22,23 @@ export function buildMonthlyMetrics(
       let insuranceSum = 0;
       let totalSum = 0;
 
-      payroll.forEach(employee => {
+      payroll.forEach((employee) => {
 
-        payrollSum += employee.rows[month].fot;
+        const row = employee.rows[month];
 
-        insuranceSum +=
-          employee.rows[month].insurance.total;
+        if (!row) {
+          return;
+        }
 
-        totalSum +=
-          employee.rows[month].total;
+        payrollSum += row.fot;
+
+        insuranceSum += row.insurance.total;
+
+        totalSum += row.total;
 
       });
 
       return {
-
         month,
 
         payroll: payrollSum,
@@ -45,7 +46,6 @@ export function buildMonthlyMetrics(
         insurance: insuranceSum,
 
         total: totalSum,
-
       };
 
     }
