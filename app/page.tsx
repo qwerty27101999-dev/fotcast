@@ -37,6 +37,8 @@ export default function Page() {
 
   const [data, setData] =
     useState<Employee[]>([]);
+    const [fileName, setFileName] =
+  useState("");
 
   const [year, setYear] =
     useState(new Date().getFullYear());
@@ -57,9 +59,13 @@ export default function Page() {
   );
 
   const company = useMemo(
-    () => buildCompany(data),
-    [data]
-  );
+  () =>
+    buildCompany(
+      data,
+      fileName
+    ),
+  [data, fileName]
+);
 
   const payroll = useMemo(
     () =>
@@ -101,8 +107,10 @@ export default function Page() {
       <PageContainer>
 
         <Toolbar
-          data={data}
-          setData={setData}
+  data={data}
+  setData={setData}
+  fileName={fileName}
+  setFileName={setFileName}
           year={year}
           setYear={setYear}
           payroll={payroll}

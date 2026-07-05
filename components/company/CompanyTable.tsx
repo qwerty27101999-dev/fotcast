@@ -91,10 +91,10 @@ export function CompanyTable({
 
             result =
               (parseExcelDate(a.hire_date)?.getTime() ?? 0)
-
               -
-
               (parseExcelDate(b.hire_date)?.getTime() ?? 0);
+
+            break;
 
         }
 
@@ -135,73 +135,60 @@ export function CompanyTable({
         marginTop: 20,
         overflow: "auto",
         maxHeight: "72vh",
+        padding: 0,
       }}
     >
 
-      <table className="table">
+      <table
+        className="table"
+        style={{
+          background: "#fff",
+          color: "#111827",
+        }}
+      >
 
         <thead
           style={{
             position: "sticky",
             top: 0,
-            background: "#fff",
-            zIndex: 10,
+            zIndex: 5,
+            background: "#f8fafc",
           }}
         >
 
           <tr>
 
-            <th
-              onClick={() =>
-                changeSort("name")
-              }
-              style={{
-                cursor: "pointer",
-              }}
-            >
+            <th onClick={() => changeSort("name")} style={{ cursor: "pointer" }}>
               Name {Arrow("name")}
             </th>
 
-            <th
-              onClick={() =>
-                changeSort("department")
-              }
-              style={{
-                cursor: "pointer",
-              }}
-            >
+            <th onClick={() => changeSort("department")} style={{ cursor: "pointer" }}>
               Department {Arrow("department")}
             </th>
 
-            <th
-              onClick={() =>
-                changeSort("hire_date")
-              }
-              style={{
-                cursor: "pointer",
-              }}
-            >
+            <th onClick={() => changeSort("hire_date")} style={{ cursor: "pointer" }}>
               Hire Date {Arrow("hire_date")}
             </th>
 
-            <th>Termination</th>
+            <th>
+              Termination
+            </th>
 
-            <th
-              onClick={() =>
-                changeSort("salary")
-              }
-              style={{
-                cursor: "pointer",
-              }}
-            >
+            <th onClick={() => changeSort("salary")} style={{ cursor: "pointer" }}>
               Salary {Arrow("salary")}
             </th>
 
-            <th>Monthly Bonus</th>
+            <th>
+              Monthly Bonus
+            </th>
 
-            <th>Quarterly Bonus</th>
+            <th>
+              Quarterly Bonus
+            </th>
 
-            <th>Annual Bonus</th>
+            <th>
+              Annual Bonus
+            </th>
 
           </tr>
 
@@ -209,93 +196,111 @@ export function CompanyTable({
 
         <tbody>
 
-          {sortedEmployees.map(
+          {sortedEmployees.map((employee, index) => {
 
-            (employee, index) => {
+            const selected =
+              selectedEmployee?.name ===
+              employee.name;
 
-              const selected =
-                selectedEmployee?.name ===
-                employee.name;
+            return (
 
-              return (
+              <tr
 
-                <tr
+                key={index}
 
-                  key={index}
+                onClick={() =>
+                  onSelect(employee)
+                }
 
-                  onClick={() =>
-                    onSelect(employee)
-                  }
+                style={{
 
-                  style={{
+                  color: "#111827",
 
-                    cursor: "pointer",
+                  cursor: "pointer",
 
-                    background:
-                      selected
-                        ? "#dbeafe"
-                        : index % 2
-                          ? "#fafafa"
-                          : "#ffffff",
+                  background:
+                    selected
+                      ? "#dbeafe"
+                      : index % 2
+                        ? "#f8fafc"
+                        : "#ffffff",
 
-                    transition:
-                      "background .15s",
+                  transition:
+                    "background .15s",
 
-                  }}
+                }}
 
-                  onMouseEnter={(e) => {
+                onMouseEnter={(e) => {
 
-                    if (!selected)
+                  if (!selected)
 
-                      e.currentTarget.style.background =
-                        "#eef6ff";
+                    e.currentTarget.style.background =
+                      "#e0f2fe";
 
-                  }}
+                }}
 
-                  onMouseLeave={(e) => {
+                onMouseLeave={(e) => {
 
-                    if (!selected)
+                  if (!selected)
 
-                      e.currentTarget.style.background =
-                        index % 2
-                          ? "#fafafa"
-                          : "#ffffff";
+                    e.currentTarget.style.background =
+                      index % 2
+                        ? "#f8fafc"
+                        : "#ffffff";
 
-                  }}
+                }}
 
+              >
+
+                <td style={{ color: "#111827" }}>
+                  {employee.name}
+                </td>
+
+                <td style={{ color: "#111827" }}>
+                  {employee.department}
+                </td>
+
+                <td style={{ color: "#111827" }}>
+                  {formatDate(employee.hire_date)}
+                </td>
+
+                <td style={{ color: "#111827" }}>
+                  {formatDate(employee.termination_date)}
+                </td>
+
+                <td
+                  className="num"
+                  style={{ color: "#111827" }}
                 >
+                  {formatMoney(employee.salary)}
+                </td>
 
-                  <td>{employee.name}</td>
+                <td
+                  className="num"
+                  style={{ color: "#111827" }}
+                >
+                  {formatMoney(employee.monthly_bonus)}
+                </td>
 
-                  <td>{employee.department}</td>
+                <td
+                  className="num"
+                  style={{ color: "#111827" }}
+                >
+                  {formatMoney(employee.quarterly_bonus)}
+                </td>
 
-                  <td>{formatDate(employee.hire_date)}</td>
+                <td
+                  className="num"
+                  style={{ color: "#111827" }}
+                >
+                  {formatMoney(employee.annual_bonus)}
+                </td>
 
-                  <td>{formatDate(employee.termination_date)}</td>
+              </tr>
 
-                  <td className="num">
-                    {formatMoney(employee.salary)}
-                  </td>
+            );
 
-                  <td className="num">
-                    {formatMoney(employee.monthly_bonus)}
-                  </td>
-
-                  <td className="num">
-                    {formatMoney(employee.quarterly_bonus)}
-                  </td>
-
-                  <td className="num">
-                    {formatMoney(employee.annual_bonus)}
-                  </td>
-
-                </tr>
-
-              );
-
-            }
-
-          )}
+          })}
 
         </tbody>
 

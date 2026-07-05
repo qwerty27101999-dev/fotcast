@@ -6,6 +6,9 @@ interface ToolbarProps {
   data: Employee[];
   setData: React.Dispatch<React.SetStateAction<Employee[]>>;
 
+  fileName: string;
+  setFileName: React.Dispatch<React.SetStateAction<string>>;
+
   year: number;
   setYear: React.Dispatch<React.SetStateAction<number>>;
 
@@ -18,6 +21,8 @@ interface ToolbarProps {
 export function Toolbar({
   data,
   setData,
+  fileName,
+  setFileName,
   year,
   setYear,
   onExport,
@@ -62,6 +67,8 @@ export function Toolbar({
           );
 
         setData(json);
+
+        setFileName(file.name);
 
       } catch (error) {
 
