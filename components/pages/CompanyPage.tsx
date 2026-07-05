@@ -92,12 +92,10 @@ export function CompanyPage({
       />
 
       <CompanyTable
-
-        employees={filteredEmployees}
-
-        onSelect={setSelectedEmployee}
-
-      />
+  employees={filteredEmployees}
+  selectedEmployee={selectedEmployee}
+  onSelect={setSelectedEmployee}
+/>
 
       <EmployeeDrawer
 
