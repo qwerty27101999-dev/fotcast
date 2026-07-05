@@ -110,145 +110,134 @@ export function DataTable<T>({
 
   const processedRows = useMemo(() => {
 
-    let result = [...rows];
+  let result = [...rows];
 
-    // 1. Department filter
-    if (filters?.department && filters.departmentKey) {
+  // =========================
+  // DEBUG COUNTER (важно!)
+  // =========================
+  const debug = {
+    start: result.length,
+    afterDepartment: 0,
+    afterDate: 0,
+    afterSearch: 0,
+    afterSort: 0,
+  };
 
-      result = result.filter(row => {
+  // =========================
+  // 1. DEPARTMENT FILTER
+  // =========================
+  if (filters?.department && filters.departmentKey) {
 
-        return (
+    result = result.filter(row => {
 
-          String((row as any)[filters.departmentKey!]) ===
+      const value = (row as any)[filters.departmentKey!];
 
-          filters.department
+      return (
+        value !== undefined &&
+        value !== null &&
+        String(value) === filters.department
+      );
+    });
+  }
 
-        );
+  debug.afterDepartment = result.length;
 
-      });
+  // =========================
+  // 2. DATE FILTER (Excel-safe)
+  // =========================
+  if (filters?.dateKey) {
 
-    }
+    result = result.filter(row => {
 
-    // 2. Date range filter
-    if (filters?.dateKey) {
+      const raw = (row as any)[filters.dateKey!];
 
-      result = result.filter(row => {
+      if (!raw) return true;
 
-        const value = (row as any)[filters.dateKey!];
+      let date: Date;
 
-        if (!value) return true;
+      // Excel serial number support
+      if (typeof raw === "number") {
+        date = new Date((raw - 25569) * 86400 * 1000);
+      } else {
+        date = new Date(raw);
+      }
 
-        const date = new Date(value);
+      if (isNaN(date.getTime())) return true;
 
-        if (filters.dateFrom && date < filters.dateFrom) {
+      if (filters.dateFrom && date < filters.dateFrom) return false;
+      if (filters.dateTo && date > filters.dateTo) return false;
 
-          return false;
+      return true;
+    });
+  }
 
-        }
+  debug.afterDate = result.length;
 
-        if (filters.dateTo && date > filters.dateTo) {
+  // =========================
+  // 3. SEARCH (SAFE)
+  // =========================
+  if (search.trim()) {
 
-          return false;
+    const q = search.toLowerCase();
 
-        }
+    result = result.filter(row =>
+      columns.some(col => {
 
-        return true;
+        const value = (row as any)[col.id];
 
-      });
+        if (value === undefined || value === null) return false;
 
-    }
+        return String(value)
+          .toLowerCase()
+          .includes(q);
+      })
+    );
+  }
 
-    // 3. Search filter
-    if (search) {
+  debug.afterSearch = result.length;
 
-      const q = search.toLowerCase();
+  // =========================
+  // 4. SORT (no mutation side effects)
+  // =========================
+  if (sort) {
 
-      result = result.filter(row => {
+    const { field, direction } = sort;
 
-        return columns.some(col => {
+    result = [...result].sort((a: any, b: any) => {
 
-          const value = (row as any)[col.id];
+      const aValue = a[field];
+      const bValue = b[field];
 
-          return String(value ?? "")
-
-            .toLowerCase()
-
-            .includes(q);
-
-        });
-
-      });
-
-    }
-
-    // 4. Sort
-    if (sort) {
-
-      const { field, direction } = sort;
-
-      result.sort((a: any, b: any) => {
-
-        const aValue = a[field];
-
-        const bValue = b[field];
-
-        if (
-
-          typeof aValue === "number" &&
-
-          typeof bValue === "number"
-
-        ) {
-
-          return direction === "asc"
-
-            ? aValue - bValue
-
-            : bValue - aValue;
-
-        }
-
-        if (
-
-          aValue instanceof Date &&
-
-          bValue instanceof Date
-
-        ) {
-
-          return direction === "asc"
-
-            ? aValue.getTime() -
-
-                bValue.getTime()
-
-            : bValue.getTime() -
-
-                aValue.getTime();
-
-        }
-
+      if (typeof aValue === "number" && typeof bValue === "number") {
         return direction === "asc"
+          ? aValue - bValue
+          : bValue - aValue;
+      }
 
-          ? String(aValue ?? "").localeCompare(
+      if (aValue instanceof Date && bValue instanceof Date) {
+        return direction === "asc"
+          ? aValue.getTime() - bValue.getTime()
+          : bValue.getTime() - aValue.getTime();
+      }
 
-              String(bValue ?? "")
+      return direction === "asc"
+        ? String(aValue ?? "").localeCompare(String(bValue ?? ""))
+        : String(bValue ?? "").localeCompare(String(aValue ?? ""));
+    });
+  }
 
-            )
+  debug.afterSort = result.length;
 
-          : String(bValue ?? "").localeCompare(
+  // =========================
+  // DEV TRACE (ВАЖНО!)
+  // =========================
+  if (process.env.NODE_ENV === "development") {
+    console.log("[DataTable Pipeline]", debug);
+  }
 
-              String(aValue ?? "")
+  return result;
 
-            );
-
-      });
-
-    }
-
-    return result;
-
-  }, [rows, filters, search, sort, columns]);
+}, [rows, filters, search, sort, columns]);
 
   function getSortIcon(field: string) {
 
