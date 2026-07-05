@@ -2,12 +2,6 @@
 
 import { ReactNode, useMemo, useState } from "react";
 
-export type ColumnFormat =
-  | "text"
-  | "number"
-  | "money"
-  | "date";
-
 export interface DataColumn<T> {
 
   id: keyof T | string;
@@ -20,9 +14,21 @@ export interface DataColumn<T> {
 
   sortable?: boolean;
 
-  format?: ColumnFormat;
-
   render?: (row: T) => ReactNode;
+
+}
+
+interface Filters<T> {
+
+  departmentKey?: keyof T;
+
+  department?: string | null;
+
+  dateKey?: keyof T;
+
+  dateFrom?: Date | null;
+
+  dateTo?: Date | null;
 
 }
 
@@ -32,11 +38,13 @@ interface Props<T> {
 
   columns: DataColumn<T>[];
 
+  getRowKey: (row: T) => string;
+
   onRowClick?: (row: T) => void;
 
   selectedRow?: T | null;
 
-  getRowKey: (row: T) => string;
+  filters?: Filters<T>;
 
 }
 
@@ -54,11 +62,13 @@ export function DataTable<T>({
 
   columns,
 
+  getRowKey,
+
   onRowClick,
 
   selectedRow,
 
-  getRowKey,
+  filters,
 
 }: Props<T>) {
 
@@ -95,180 +105,156 @@ export function DataTable<T>({
   }
 
   // =========================
-  // FILTER
+  // PIPELINE FILTER ENGINE
   // =========================
 
-  const filteredRows = useMemo(() => {
+  const processedRows = useMemo(() => {
 
-    if (!search) return rows;
+    let result = [...rows];
 
-    const q = search.toLowerCase();
+    // 1. Department filter
+    if (filters?.department && filters.departmentKey) {
 
-    return rows.filter(row => {
+      result = result.filter(row => {
 
-      return columns.some(col => {
+        return (
 
-        const value = (row as any)[col.id];
+          String((row as any)[filters.departmentKey!]) ===
 
-        if (value === null || value === undefined) {
+          filters.department
+
+        );
+
+      });
+
+    }
+
+    // 2. Date range filter
+    if (filters?.dateKey) {
+
+      result = result.filter(row => {
+
+        const value = (row as any)[filters.dateKey!];
+
+        if (!value) return true;
+
+        const date = new Date(value);
+
+        if (filters.dateFrom && date < filters.dateFrom) {
 
           return false;
 
         }
 
-        return String(value)
+        if (filters.dateTo && date > filters.dateTo) {
 
-          .toLowerCase()
+          return false;
 
-          .includes(q);
+        }
+
+        return true;
 
       });
 
-    });
+    }
 
-  }, [rows, search, columns]);
+    // 3. Search filter
+    if (search) {
 
-  // =========================
-  // SORT
-  // =========================
+      const q = search.toLowerCase();
 
-  const sortedRows = useMemo(() => {
+      result = result.filter(row => {
 
-    if (!sort) return filteredRows;
+        return columns.some(col => {
 
-    const { field, direction } = sort;
+          const value = (row as any)[col.id];
 
-    const copy = [...filteredRows];
+          return String(value ?? "")
 
-    copy.sort((a: any, b: any) => {
+            .toLowerCase()
 
-      const aValue = a[field];
+            .includes(q);
 
-      const bValue = b[field];
+        });
 
-      if (
-
-        typeof aValue === "number" &&
-
-        typeof bValue === "number"
-
-      ) {
-
-        return direction === "asc"
-
-          ? aValue - bValue
-
-          : bValue - aValue;
-
-      }
-
-      if (
-
-        aValue instanceof Date &&
-
-        bValue instanceof Date
-
-      ) {
-
-        return direction === "asc"
-
-          ? aValue.getTime() -
-
-              bValue.getTime()
-
-          : bValue.getTime() -
-
-              aValue.getTime();
-
-      }
-
-      return direction === "asc"
-
-        ? String(aValue ?? "").localeCompare(
-
-            String(bValue ?? "")
-
-          )
-
-        : String(bValue ?? "").localeCompare(
-
-            String(aValue ?? "")
-
-          );
-
-    });
-
-    return copy;
-
-  }, [filteredRows, sort]);
-
-  // =========================
-  // FORMATTER
-  // =========================
-
-  function formatValue(
-
-    value: any,
-
-    format?: ColumnFormat
-
-  ) {
-
-    if (value === null || value === undefined) {
-
-      return "";
+      });
 
     }
 
-    switch (format) {
+    // 4. Sort
+    if (sort) {
 
-      case "money":
+      const { field, direction } = sort;
 
-        return new Intl.NumberFormat("ru-RU", {
+      result.sort((a: any, b: any) => {
 
-          minimumFractionDigits: 0,
+        const aValue = a[field];
 
-          maximumFractionDigits: 0,
+        const bValue = b[field];
 
-        }).format(Number(value));
+        if (
 
-      case "number":
+          typeof aValue === "number" &&
 
-        return new Intl.NumberFormat("ru-RU").format(
+          typeof bValue === "number"
 
-          Number(value)
+        ) {
 
-        );
+          return direction === "asc"
 
-      case "date":
+            ? aValue - bValue
 
-        return new Date(value).toLocaleDateString(
+            : bValue - aValue;
 
-          "ru-RU"
+        }
 
-        );
+        if (
 
-      default:
+          aValue instanceof Date &&
 
-        return String(value);
+          bValue instanceof Date
+
+        ) {
+
+          return direction === "asc"
+
+            ? aValue.getTime() -
+
+                bValue.getTime()
+
+            : bValue.getTime() -
+
+                aValue.getTime();
+
+        }
+
+        return direction === "asc"
+
+          ? String(aValue ?? "").localeCompare(
+
+              String(bValue ?? "")
+
+            )
+
+          : String(bValue ?? "").localeCompare(
+
+              String(aValue ?? "")
+
+            );
+
+      });
 
     }
 
-  }
+    return result;
+
+  }, [rows, filters, search, sort, columns]);
 
   function getSortIcon(field: string) {
 
-    if (!sort || sort.field !== field) {
+    if (!sort || sort.field !== field) return "⇅";
 
-      return "⇅";
-
-    }
-
-    return sort.direction === "asc"
-
-      ? "▲"
-
-      : "▼";
+    return sort.direction === "asc" ? "▲" : "▼";
 
   }
 
@@ -296,9 +282,7 @@ export function DataTable<T>({
 
           value={search}
 
-          onChange={e =>
-            setSearch(e.target.value)
-          }
+          onChange={e => setSearch(e.target.value)}
 
           placeholder="Search..."
 
@@ -309,7 +293,6 @@ export function DataTable<T>({
             border: "1px solid #2a2a2a",
             background: "#141414",
             color: "#eaeaea",
-            outline: "none",
           }}
 
         />
@@ -342,8 +325,6 @@ export function DataTable<T>({
                   }
                   style={{
                     width: column.width,
-                    textAlign:
-                      column.align ?? "left",
                     cursor: isSortable
                       ? "pointer"
                       : "default",
@@ -354,9 +335,7 @@ export function DataTable<T>({
                   {column.title}{" "}
 
                   {isSortable &&
-                    getSortIcon(
-                      String(column.id)
-                    )}
+                    getSortIcon(String(column.id))}
 
                 </th>
 
@@ -370,7 +349,7 @@ export function DataTable<T>({
 
         <tbody>
 
-          {sortedRows.map(row => {
+          {processedRows.map(row => {
 
             const selected =
 
@@ -392,20 +371,12 @@ export function DataTable<T>({
                     : "company-row"
                 }
 
-                onClick={() =>
-                  onRowClick?.(row)
-                }
+                onClick={() => onRowClick?.(row)}
 
                 style={{
-
-                  cursor:
-
-                    onRowClick
-
-                      ? "pointer"
-
-                      : "default",
-
+                  cursor: onRowClick
+                    ? "pointer"
+                    : "default",
                 }}
 
               >
@@ -425,21 +396,14 @@ export function DataTable<T>({
                     style={{
                       textAlign:
                         column.align ?? "left",
-                      color: "#111827",
                     }}
 
                   >
 
                     {column.render
-
                       ? column.render(row)
-
-                      : formatValue(
-
-                          (row as any)[column.id],
-
-                          column.format
-
+                      : String(
+                          (row as any)[column.id]
                         )}
 
                   </td>
