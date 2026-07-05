@@ -1,5 +1,8 @@
 import { Employee } from "@/lib/types";
 
+import { formatMoney } from "@/utils/formatMoney";
+import { formatDate } from "@/utils/formatDate";
+
 interface Props {
 
   employees: Employee[];
@@ -67,17 +70,25 @@ export function CompanyTable({
 
               <td>{employee.department}</td>
 
-              <td>{String(employee.hire_date ?? "")}</td>
+              <td>{formatDate(employee.hire_date)}</td>
 
-              <td>{String(employee.termination_date ?? "")}</td>
+              <td>{formatDate(employee.termination_date)}</td>
 
-              <td>{employee.salary}</td>
+              <td className="num">
+                {formatMoney(employee.salary)}
+              </td>
 
-              <td>{employee.monthly_bonus}</td>
+              <td className="num">
+                {formatMoney(employee.monthly_bonus)}
+              </td>
 
-              <td>{employee.quarterly_bonus}</td>
+              <td className="num">
+                {formatMoney(employee.quarterly_bonus)}
+              </td>
 
-              <td>{employee.annual_bonus}</td>
+              <td className="num">
+                {formatMoney(employee.annual_bonus)}
+              </td>
 
             </tr>
 
