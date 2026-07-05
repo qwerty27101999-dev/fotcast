@@ -64,22 +64,22 @@ export default function Page() {
   const payroll = useMemo(
     () =>
       buildPayroll(
-        data,
+        company,
         months,
         parseExcelDate,
         scenario
       ),
-    [data, months, scenario]
+    [company, months, scenario]
   );
 
   const headcount = useMemo(
     () =>
       buildHeadcount(
-        data,
+        company,
         months,
         parseExcelDate
       ),
-    [data, months]
+    [company, months]
   );
 
   const handleExport = () => {

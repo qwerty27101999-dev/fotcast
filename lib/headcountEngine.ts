@@ -1,4 +1,4 @@
-import { Employee } from "./types";
+import { CompanyDataset } from "./company/companyTypes";
 
 export interface HeadcountRow {
   dep: string;
@@ -6,43 +6,60 @@ export interface HeadcountRow {
 }
 
 export function buildHeadcount(
-  data: Employee[],
+  company: CompanyDataset,
   months: Date[],
   parseExcelDate: (v: any) => Date | null
 ): HeadcountRow[] {
-  const departments = Array.from(
-    new Set(data.map(emp => emp.department || "—"))
-  );
+
+  const departments = company.departments;
 
   return departments.map(dep => {
+
     const row: HeadcountRow = {
       dep,
     };
 
     months.forEach((month, index) => {
+
       const monthEnd = new Date(
         month.getFullYear(),
         month.getMonth() + 1,
         0
       );
 
-      row[index] = data.filter(emp => {
-        if ((emp.department || "—") !== dep) return false;
+      row[index] = company.employees.filter(emp => {
 
-        const hire = parseExcelDate(emp.hire_date);
-        const termination = parseExcelDate(emp.termination_date);
+        if ((emp.department || "—") !== dep)
+          return false;
 
-        if (!hire) return false;
+        const hire = parseExcelDate(
+          emp.hire_date
+        );
 
-        if (hire > monthEnd) return false;
+        const termination = parseExcelDate(
+          emp.termination_date
+        );
 
-        if (termination && termination <= monthEnd)
+        if (!hire)
+          return false;
+
+        if (hire > monthEnd)
+          return false;
+
+        if (
+          termination &&
+          termination <= monthEnd
+        )
           return false;
 
         return true;
+
       }).length;
+
     });
 
     return row;
+
   });
+
 }

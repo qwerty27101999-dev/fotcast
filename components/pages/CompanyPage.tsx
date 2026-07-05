@@ -1,18 +1,7 @@
 import { CompanyDataset } from "@/lib/company/companyTypes";
-import { parseExcelDate } from "@/utils/date";
 
 interface CompanyPageProps {
   company: CompanyDataset;
-}
-
-function formatDate(value: any) {
-  const date = parseExcelDate(value);
-
-  if (!date) {
-    return "—";
-  }
-
-  return date.toLocaleDateString("ru-RU");
 }
 
 export function CompanyPage({
@@ -29,49 +18,43 @@ export function CompanyPage({
 
         <div className="card-title">
 
-          Company Summary
+          Company Information
 
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "220px 1fr",
-            rowGap: 10,
-            columnGap: 30,
-            marginTop: 20,
-            marginBottom: 30,
-          }}
-        >
+        <div style={{ marginBottom: 24 }}>
 
-          <strong>Employees</strong>
-          <span>{company.employees.length}</span>
+          <p>
 
-          <strong>Departments</strong>
-          <span>{company.departments.length}</span>
+            <strong>Source file:</strong>{" "}
 
-          <strong>Imported</strong>
-          <span>
-            {company.metadata.importedAt.toLocaleString()}
-          </span>
-
-          <strong>Source file</strong>
-          <span>
             {company.metadata.fileName ?? "Unknown"}
-          </span>
 
-        </div>
+          </p>
 
-      </div>
+          <p>
 
-      <div
-        className="card"
-        style={{ marginTop: 20 }}
-      >
+            <strong>Imported:</strong>{" "}
 
-        <div className="card-title">
+            {company.metadata.importedAt.toLocaleString()}
 
-          Employees
+          </p>
+
+          <p>
+
+            <strong>Employees:</strong>{" "}
+
+            {company.employees.length}
+
+          </p>
+
+          <p>
+
+            <strong>Departments:</strong>{" "}
+
+            {company.departments.length}
+
+          </p>
 
         </div>
 
@@ -85,7 +68,7 @@ export function CompanyPage({
 
               <th>Department</th>
 
-              <th>Hire</th>
+              <th>Hire Date</th>
 
               <th>Termination</th>
 
@@ -111,13 +94,9 @@ export function CompanyPage({
 
                 <td>{employee.department}</td>
 
-                <td>
-                  {formatDate(employee.hire_date)}
-                </td>
+                <td>{String(employee.hire_date ?? "")}</td>
 
-                <td>
-                  {formatDate(employee.termination_date)}
-                </td>
+                <td>{String(employee.termination_date ?? "")}</td>
 
                 <td>{employee.salary}</td>
 

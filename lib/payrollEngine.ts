@@ -3,14 +3,14 @@ import { calculateCalendarPayroll } from "./payrollRules";
 import { getEmploymentPeriod } from "./calendarEngine";
 
 import {
-  Employee,
   PayrollEmployee,
   PayrollRow,
 } from "./types";
 
+import { CompanyDataset } from "./company/companyTypes";
 import { Scenario } from "./scenario";
 
-function normalizeDate(date: Date | null): Date |null {
+function normalizeDate(date: Date | null): Date | null {
   if (!date) return null;
 
   return new Date(
@@ -21,13 +21,13 @@ function normalizeDate(date: Date | null): Date |null {
 }
 
 export function buildPayroll(
-  data: Employee[],
+  company: CompanyDataset,
   months: Date[],
   parseExcelDate: (v: any) => Date | null,
   scenario: Scenario
 ): PayrollEmployee[] {
 
-  return data.map(employee => {
+  return company.employees.map(employee => {
 
     const hire = normalizeDate(
       parseExcelDate(employee.hire_date)
