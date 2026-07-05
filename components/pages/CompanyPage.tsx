@@ -1,12 +1,63 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+import { Employee } from "@/lib/types";
 import { CompanyDataset } from "@/lib/company/companyTypes";
 
+import { CompanyHeader } from "../company/CompanyHeader";
+import { CompanyToolbar } from "../company/CompanyToolbar";
+import { CompanyTable } from "../company/CompanyTable";
+import { EmployeeDrawer } from "../company/EmployeeDrawer";
+
 interface CompanyPageProps {
+
   company: CompanyDataset;
+
 }
 
 export function CompanyPage({
+
   company,
+
 }: CompanyPageProps) {
+
+  const [search, setSearch] =
+    useState("");
+
+  const [department, setDepartment] =
+    useState("All");
+
+  const [selectedEmployee, setSelectedEmployee] =
+    useState<Employee | null>(null);
+
+  const filteredEmployees =
+    useMemo(() => {
+
+      return company.employees.filter(employee => {
+
+        const matchName =
+          employee.name
+            .toLowerCase()
+            .includes(search.toLowerCase());
+
+        const matchDepartment =
+          department === "All"
+            ? true
+            : employee.department === department;
+
+        return (
+          matchName &&
+          matchDepartment
+        );
+
+      });
+
+    }, [
+      company,
+      search,
+      department,
+    ]);
 
   return (
 
@@ -14,107 +65,49 @@ export function CompanyPage({
 
       <h2>Company</h2>
 
-      <div className="card">
+      <CompanyHeader
+        company={company}
+      />
 
-        <div className="card-title">
+      <CompanyToolbar
 
-          Company Information
+        search={search}
 
-        </div>
+        setSearch={setSearch}
 
-        <div style={{ marginBottom: 24 }}>
+        department={department}
 
-          <p>
+        setDepartment={setDepartment}
 
-            <strong>Source file:</strong>{" "}
+        departments={company.departments}
 
-            {company.metadata.fileName ?? "Unknown"}
+        totalEmployees={
+          company.employees.length
+        }
 
-          </p>
+        filteredEmployees={
+          filteredEmployees.length
+        }
 
-          <p>
+      />
 
-            <strong>Imported:</strong>{" "}
+      <CompanyTable
 
-            {company.metadata.importedAt.toLocaleString()}
+        employees={filteredEmployees}
 
-          </p>
+        onSelect={setSelectedEmployee}
 
-          <p>
+      />
 
-            <strong>Employees:</strong>{" "}
+      <EmployeeDrawer
 
-            {company.employees.length}
+        employee={selectedEmployee}
 
-          </p>
+        onClose={() =>
+          setSelectedEmployee(null)
+        }
 
-          <p>
-
-            <strong>Departments:</strong>{" "}
-
-            {company.departments.length}
-
-          </p>
-
-        </div>
-
-        <table className="table">
-
-          <thead>
-
-            <tr>
-
-              <th>Name</th>
-
-              <th>Department</th>
-
-              <th>Hire Date</th>
-
-              <th>Termination</th>
-
-              <th>Salary</th>
-
-              <th>Monthly Bonus</th>
-
-              <th>Quarterly Bonus</th>
-
-              <th>Annual Bonus</th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            {company.employees.map((employee, index) => (
-
-              <tr key={index}>
-
-                <td>{employee.name}</td>
-
-                <td>{employee.department}</td>
-
-                <td>{String(employee.hire_date ?? "")}</td>
-
-                <td>{String(employee.termination_date ?? "")}</td>
-
-                <td>{employee.salary}</td>
-
-                <td>{employee.monthly_bonus}</td>
-
-                <td>{employee.quarterly_bonus}</td>
-
-                <td>{employee.annual_bonus}</td>
-
-              </tr>
-
-            ))}
-
-          </tbody>
-
-        </table>
-
-      </div>
+      />
 
     </>
 
