@@ -2,9 +2,7 @@
 
 import { Employee } from "@/lib/types";
 
-import { DataTable } from "@/components/tables/DataTable";
-
-import { Column } from "@/lib/table/tableTypes";
+import { DataTable, DataColumn } from "@/components/tables/DataTable";
 
 import { formatMoney } from "@/utils/formatMoney";
 import { formatDate } from "@/utils/formatDate";
@@ -19,7 +17,7 @@ interface Props {
 
 }
 
-export const companyColumns: Column<Employee>[] = [
+export const companyColumns: DataColumn<Employee>[] = [
 
   {
 
@@ -29,7 +27,7 @@ export const companyColumns: Column<Employee>[] = [
 
     sortable: true,
 
-    searchable: true,
+    render: employee => employee.name,
 
   },
 
@@ -41,7 +39,7 @@ export const companyColumns: Column<Employee>[] = [
 
     sortable: true,
 
-    searchable: true,
+    render: employee => employee.department,
 
   },
 
@@ -53,7 +51,7 @@ export const companyColumns: Column<Employee>[] = [
 
     sortable: true,
 
-    render: (row) => formatDate(row.hire_date),
+    render: employee => formatDate(employee.hire_date),
 
   },
 
@@ -65,7 +63,7 @@ export const companyColumns: Column<Employee>[] = [
 
     sortable: true,
 
-    render: (row) => formatDate(row.termination_date),
+    render: employee => formatDate(employee.termination_date),
 
   },
 
@@ -77,9 +75,9 @@ export const companyColumns: Column<Employee>[] = [
 
     sortable: true,
 
-    numeric: true,
+    align: "right",
 
-    render: (row) => formatMoney(row.salary),
+    render: employee => formatMoney(employee.salary),
 
   },
 
@@ -91,9 +89,11 @@ export const companyColumns: Column<Employee>[] = [
 
     sortable: true,
 
-    numeric: true,
+    align: "right",
 
-    render: (row) => formatMoney(row.monthly_bonus),
+    render: employee =>
+
+      formatMoney(employee.monthly_bonus),
 
   },
 
@@ -105,9 +105,11 @@ export const companyColumns: Column<Employee>[] = [
 
     sortable: true,
 
-    numeric: true,
+    align: "right",
 
-    render: (row) => formatMoney(row.quarterly_bonus),
+    render: employee =>
+
+      formatMoney(employee.quarterly_bonus),
 
   },
 
@@ -119,9 +121,11 @@ export const companyColumns: Column<Employee>[] = [
 
     sortable: true,
 
-    numeric: true,
+    align: "right",
 
-    render: (row) => formatMoney(row.annual_bonus),
+    render: employee =>
+
+      formatMoney(employee.annual_bonus),
 
   },
 
@@ -141,13 +145,15 @@ export function CompanyTable({
 
     <DataTable
 
-      columns={companyColumns}
-
       rows={employees}
+
+      columns={companyColumns}
 
       selectedRow={selectedEmployee}
 
       onRowClick={onSelect}
+
+      getRowKey={(employee) => employee.name}
 
     />
 
