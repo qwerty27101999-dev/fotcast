@@ -1,8 +1,7 @@
-import { CompanySummary } from "../company/CompanySummary";
 import { CompanyDataset } from "@/lib/company/companyTypes";
 
 interface CompanyPageProps {
-  company: CompanyDataset | null;
+  company: CompanyDataset;
 }
 
 export function CompanyPage({
@@ -13,26 +12,43 @@ export function CompanyPage({
 
     <>
 
-      <h2>Company Data</h2>
+      <h2>Company</h2>
 
-      <CompanySummary
-        company={company}
-      />
-
-      <div
-        className="card"
-        style={{
-          marginTop: 20,
-        }}
-      >
+      <div className="card">
 
         <div className="card-title">
-          Employees
+
+          Company Summary
+
         </div>
 
-        <p>
-          Employee table will appear here.
-        </p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "220px 1fr",
+            rowGap: 10,
+            columnGap: 30,
+            marginTop: 20,
+          }}
+        >
+
+          <strong>Employees</strong>
+          <span>{company.employees.length}</span>
+
+          <strong>Departments</strong>
+          <span>{company.departments.length}</span>
+
+          <strong>Imported</strong>
+          <span>
+            {company.metadata.importedAt.toLocaleString()}
+          </span>
+
+          <strong>Source file</strong>
+          <span>
+            {company.metadata.fileName ?? "Unknown"}
+          </span>
+
+        </div>
 
       </div>
 
