@@ -2,6 +2,12 @@
 
 import { ReactNode, useMemo, useState } from "react";
 
+export type ColumnFormat =
+  | "text"
+  | "number"
+  | "money"
+  | "date";
+
 export interface DataColumn<T> {
 
   id: keyof T | string;
@@ -14,7 +20,9 @@ export interface DataColumn<T> {
 
   sortable?: boolean;
 
-  render: (row: T) => ReactNode;
+  format?: ColumnFormat;
+
+  render?: (row: T) => ReactNode;
 
 }
 
@@ -86,6 +94,10 @@ export function DataTable<T>({
 
   }
 
+  // =========================
+  // FILTER
+  // =========================
+
   const filteredRows = useMemo(() => {
 
     if (!search) return rows;
@@ -116,6 +128,10 @@ export function DataTable<T>({
 
   }, [rows, search, columns]);
 
+  // =========================
+  // SORT
+  // =========================
+
   const sortedRows = useMemo(() => {
 
     if (!sort) return filteredRows;
@@ -130,7 +146,6 @@ export function DataTable<T>({
 
       const bValue = b[field];
 
-      // numbers
       if (
 
         typeof aValue === "number" &&
@@ -147,7 +162,6 @@ export function DataTable<T>({
 
       }
 
-      // dates
       if (
 
         aValue instanceof Date &&
@@ -168,7 +182,6 @@ export function DataTable<T>({
 
       }
 
-      // fallback string
       return direction === "asc"
 
         ? String(aValue ?? "").localeCompare(
@@ -188,6 +201,60 @@ export function DataTable<T>({
     return copy;
 
   }, [filteredRows, sort]);
+
+  // =========================
+  // FORMATTER
+  // =========================
+
+  function formatValue(
+
+    value: any,
+
+    format?: ColumnFormat
+
+  ) {
+
+    if (value === null || value === undefined) {
+
+      return "";
+
+    }
+
+    switch (format) {
+
+      case "money":
+
+        return new Intl.NumberFormat("ru-RU", {
+
+          minimumFractionDigits: 0,
+
+          maximumFractionDigits: 0,
+
+        }).format(Number(value));
+
+      case "number":
+
+        return new Intl.NumberFormat("ru-RU").format(
+
+          Number(value)
+
+        );
+
+      case "date":
+
+        return new Date(value).toLocaleDateString(
+
+          "ru-RU"
+
+        );
+
+      default:
+
+        return String(value);
+
+    }
+
+  }
 
   function getSortIcon(field: string) {
 
@@ -216,7 +283,7 @@ export function DataTable<T>({
       }}
     >
 
-      {/* SEARCH BAR */}
+      {/* SEARCH */}
       <div
         style={{
           padding: 10,
@@ -363,7 +430,17 @@ export function DataTable<T>({
 
                   >
 
-                    {column.render(row)}
+                    {column.render
+
+                      ? column.render(row)
+
+                      : formatValue(
+
+                          (row as any)[column.id],
+
+                          column.format
+
+                        )}
 
                   </td>
 
