@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import { buildPayroll } from "@/lib/payrollEngine";
 import { buildHeadcount } from "@/lib/headcountEngine";
 
+import { buildCompany } from "@/lib/company/companyEngine";
+
 import { parseExcelDate } from "@/utils/date";
 import { exportPayroll } from "@/utils/exportExcel";
 
@@ -49,10 +51,14 @@ export default function Page() {
     () =>
       Array.from(
         { length: 12 },
-        (_, i) =>
-          new Date(year, i, 1)
+        (_, i) => new Date(year, i, 1)
       ),
     [year]
+  );
+
+  const company = useMemo(
+    () => buildCompany(data),
+    [data]
   );
 
   const payroll = useMemo(
@@ -106,9 +112,9 @@ export default function Page() {
 
         {page === "dashboard" && (
           <DashboardPage
-  payroll={payroll}
-  headcount={headcount}
-/>
+            payroll={payroll}
+            headcount={headcount}
+          />
         )}
 
         {page === "payroll" && (
@@ -133,7 +139,9 @@ export default function Page() {
         )}
 
         {page === "company" && (
-          <CompanyPage />
+          <CompanyPage
+            company={company}
+          />
         )}
 
         {page === "export" && (

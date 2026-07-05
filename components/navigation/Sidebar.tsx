@@ -8,7 +8,7 @@ const items = [
   ["payroll", "💰 Payroll"],
   ["headcount", "👥 Headcount"],
   ["scenario", "🎯 Scenarios"],
-  ["company", "⚙ Company"],
+  ["company", "⚙ Company Data"],
   ["export", "📤 Export"],
 ];
 
