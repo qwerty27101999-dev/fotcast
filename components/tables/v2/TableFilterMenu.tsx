@@ -6,9 +6,9 @@ interface Props {
 
   values: string[];
 
-  selected: Set<string>;
+  selected: string[];
 
-  onApply: (values: Set<string>) => void;
+  onApply: (values: string[]) => void;
 
   onClose: () => void;
 
@@ -28,55 +28,59 @@ export function TableFilterMenu({
 
   const [search, setSearch] = useState("");
 
-  const [localSelection, setLocalSelection] = useState(
-    new Set(selected)
-  );
+  const [localSelection, setLocalSelection] =
+
+    useState<string[]>(selected);
 
   useEffect(() => {
 
-    setLocalSelection(new Set(selected));
+    setLocalSelection(selected);
 
   }, [selected]);
 
   const filteredValues = useMemo(() => {
 
-    if (!search.trim()) return values;
+    if (!search.trim()) {
+
+      return values;
+
+    }
 
     const q = search.toLowerCase();
 
-    return values.filter(value =>
-      value.toLowerCase().includes(q)
+    return values.filter(v =>
+
+      v.toLowerCase().includes(q)
+
     );
 
   }, [values, search]);
 
   function toggle(value: string) {
 
-    const next = new Set(localSelection);
+    if (localSelection.includes(value)) {
 
-    if (next.has(value)) {
+      setLocalSelection(
 
-      next.delete(value);
+        localSelection.filter(
+
+          v => v !== value
+
+        )
+
+      );
 
     } else {
 
-      next.add(value);
+      setLocalSelection([
+
+        ...localSelection,
+
+        value,
+
+      ]);
 
     }
-
-    setLocalSelection(next);
-
-  }
-
-  function selectAll() {
-
-    setLocalSelection(new Set(values));
-
-  }
-
-  function clearAll() {
-
-    setLocalSelection(new Set());
 
   }
 
@@ -94,7 +98,7 @@ export function TableFilterMenu({
 
         width: 260,
 
-        background: "#ffffff",
+        background: "#fff",
 
         border: "1px solid #d1d5db",
 
@@ -117,7 +121,9 @@ export function TableFilterMenu({
         value={search}
 
         onChange={e =>
+
           setSearch(e.target.value)
+
         }
 
         placeholder="Search..."
@@ -130,10 +136,6 @@ export function TableFilterMenu({
 
           marginBottom: 10,
 
-          borderRadius: 6,
-
-          border: "1px solid #d1d5db",
-
         }}
 
       />
@@ -142,57 +144,9 @@ export function TableFilterMenu({
 
         style={{
 
-          display: "flex",
-
-          gap: 8,
-
-          marginBottom: 10,
-
-        }}
-
-      >
-
-        <button
-
-          className="btn"
-
-          onClick={selectAll}
-
-        >
-
-          All
-
-        </button>
-
-        <button
-
-          className="btn"
-
-          onClick={clearAll}
-
-        >
-
-          None
-
-        </button>
-
-      </div>
-
-      <div
-
-        style={{
-
           maxHeight: 260,
 
           overflowY: "auto",
-
-          border:
-
-            "1px solid #e5e7eb",
-
-          borderRadius: 6,
-
-          padding: 6,
 
         }}
 
@@ -210,9 +164,7 @@ export function TableFilterMenu({
 
               gap: 8,
 
-              padding: "4px 0",
-
-              cursor: "pointer",
+              padding: 4,
 
             }}
 
@@ -223,11 +175,19 @@ export function TableFilterMenu({
               type="checkbox"
 
               checked={
-                localSelection.has(value)
+
+                localSelection.includes(
+
+                  value
+
+                )
+
               }
 
               onChange={() =>
+
                 toggle(value)
+
               }
 
             />

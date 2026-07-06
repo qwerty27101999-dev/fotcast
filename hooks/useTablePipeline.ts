@@ -15,9 +15,7 @@ interface PipelineParams<T> {
 
   sort: SortState<T> | null;
 
-  filters?: {
-    [key: string]: any;
-  };
+  columnFilters?: Record<string, string[]>;
 }
 
 export function useTablePipeline<T>({
@@ -25,33 +23,51 @@ export function useTablePipeline<T>({
   columns,
   search,
   sort,
-  filters,
+  columnFilters,
 }: PipelineParams<T>) {
   return useMemo(() => {
     let result = [...rows];
 
     //
-    // ==========================
-    // FILTERS
-    // ==========================
-    //
+// ==========================
+// COLUMN FILTERS (Excel style)
+// ==========================
+//
 
-    if (filters) {
-      Object.entries(filters).forEach(([field, value]) => {
-        if (
-          value === undefined ||
-          value === null ||
-          value === "" ||
-          value === "All"
-        ) {
-          return;
-        }
+if (columnFilters) {
 
-        result = result.filter((row: any) => {
-          return String(row[field]) === String(value);
-        });
+  (Object.entries(columnFilters) as [string, string[]][])
+.forEach(
+
+    ([field, selectedValues]) => {
+
+      if (!selectedValues.length) {
+
+        return;
+
+      }
+
+      result = result.filter((row: any) => {
+
+        const value = String(
+
+          row[field] ?? ""
+
+        );
+
+        return selectedValues.includes(
+
+          value
+
+        );
+
       });
+
     }
+
+  );
+
+}
 
     //
     // ==========================
@@ -108,6 +124,6 @@ export function useTablePipeline<T>({
     columns,
     search,
     sort,
-    filters,
+    columnFilters,
   ]);
 }

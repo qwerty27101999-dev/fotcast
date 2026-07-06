@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { DataColumn } from "./types";
 import { TableFilterMenu } from "./TableFilterMenu";
@@ -17,13 +17,13 @@ interface Props<T> {
 
   onSort: (field: string) => void;
 
-  columnFilters: Record<string, Set<string>>;
+  columnFilters: Record<string, string[]>;
 
   onFilterChange: (
 
     columnId: string,
 
-    values: Set<string>
+    values: string[]
 
   ) => void;
 
@@ -59,35 +59,31 @@ export function TableHeader<T>({
 
         {columns.map(column => {
 
-          const values = useMemo(() => {
+          const unique = new Set<string>();
 
-            const unique = new Set<string>();
+          rows.forEach(row => {
 
-            rows.forEach(row => {
+            const value = column.getValue
 
-              const value = column.getValue
+              ? column.getValue(row)
 
-                ? column.getValue(row)
+              : (row as any)[column.id];
 
-                : (row as any)[column.id];
+            unique.add(String(value ?? ""));
 
-              unique.add(String(value ?? ""));
+          });
 
-            });
-
-            return [...unique].sort();
-
-          }, [rows]);
+          const values = [...unique].sort();
 
           const selected =
 
             columnFilters[String(column.id)] ??
 
-            new Set(values);
+            values;
 
           const filtered =
 
-            selected.size !== values.length;
+            selected.length !== values.length;
 
           return (
 
@@ -101,8 +97,6 @@ export function TableHeader<T>({
 
                 position: "relative",
 
-                userSelect: "none",
-
                 whiteSpace: "nowrap",
 
               }}
@@ -115,9 +109,9 @@ export function TableHeader<T>({
 
                   display: "flex",
 
-                  alignItems: "center",
-
                   justifyContent: "space-between",
+
+                  alignItems: "center",
 
                   gap: 6,
 
@@ -200,8 +194,6 @@ export function TableHeader<T>({
                           ? "#2563eb"
 
                           : "#6b7280",
-
-                      fontSize: 13,
 
                     }}
 
