@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { useTablePipeline, SortState } from "@/hooks/useTablePipeline";
 import { useFilterEngine } from "@/hooks/useFilterEngine";
+
 import { DataColumn } from "./types";
 import { TableHeader } from "./TableHeader";
 import { TableRow } from "./TableRow";
@@ -24,25 +25,14 @@ export function DataTable<T>({
   onRowClick,
 }: Props<T>) {
 
-  //
-  // ==========================
-  // TABLE STATE
-  // ==========================
-  //
-
-  const [globalSearch, setGlobalSearch] = useState("");
+  const [globalSearch, setGlobalSearch] =
+    useState("");
 
   const [sort, setSort] =
     useState<SortState<T> | null>(null);
 
   const [columnFilters, setColumnFilters] =
     useState<Record<string, string[]>>({});
-
-  //
-  // ==========================
-  // SORT
-  // ==========================
-  //
 
   function handleSort(field: string) {
 
@@ -51,11 +41,8 @@ export function DataTable<T>({
       if (!prev || prev.field !== field) {
 
         return {
-
           field,
-
           direction: "asc",
-
         };
 
       }
@@ -75,71 +62,44 @@ export function DataTable<T>({
 
   }
 
-  //
-  // ==========================
-  // COLUMN FILTERS
-  // ==========================
-  //
-
   function handleFilterChange(
     columnId: string,
     values: string[]
   ) {
 
     setColumnFilters(prev => ({
-
       ...prev,
-
       [columnId]: values,
-
     }));
 
   }
 
-  //
-// ==========================
-// FILTER ENGINE
-// ==========================
-//
+  const {
 
-const {
+    filteredRows,
 
-  filteredRows,
+    getAvailableValues,
 
-  getAvailableValues,
+  } = useFilterEngine({
 
-} = useFilterEngine({
+    rows,
 
-  rows,
-
-  columnFilters,
-
-});
-
-//
-// ==========================
-// PIPELINE
-// ==========================
-//
-
-const processedRows =
-  useTablePipeline({
-
-    rows: filteredRows,
-
-    columns,
-
-    search: globalSearch,
-
-    sort,
+    columnFilters,
 
   });
 
-  //
-  // ==========================
-  // RENDER
-  // ==========================
-  //
+  const processedRows =
+    useTablePipeline({
+
+      rows: filteredRows,
+
+      columns,
+
+      search: globalSearch,
+
+      sort,
+
+    });
 
   return (
 
@@ -147,12 +107,9 @@ const processedRows =
       className="card"
       style={{
         padding: 0,
-        overflow: "auto",
-        maxHeight: "72vh",
+        overflow: "visible",
       }}
     >
-
-      {/* GLOBAL SEARCH */}
 
       <div
         style={{
@@ -180,55 +137,66 @@ const processedRows =
 
       </div>
 
-      <table
-        className="table"
+      <div
         style={{
-          background: "#fff",
-          color: "#111827",
+          overflow: "auto",
+          maxHeight: "72vh",
         }}
       >
 
-        <TableHeader
-          columns={columns}
-          rows={rows}
-          sortField={
-            sort
-              ? String(sort.field)
-              : null
-          }
-          sortDirection={
-            sort?.direction ?? "asc"
-          }
-          onSort={handleSort}
-          columnFilters={columnFilters}
-          onFilterChange={handleFilterChange}
-          getAvailableValues={getAvailableValues}
-        />
+        <table
+          className="table"
+          style={{
+            background: "#fff",
+            color: "#111827",
+          }}
+        >
 
-        <tbody>
+          <TableHeader
+            columns={columns}
+            rows={filteredRows}
+            sortField={
+              sort
+                ? String(sort.field)
+                : null
+            }
+            sortDirection={
+              sort?.direction ?? "asc"
+            }
+            onSort={handleSort}
+            columnFilters={columnFilters}
+            onFilterChange={handleFilterChange}
+            getAvailableValues={
+              getAvailableValues
+            }
+          />
 
-          {processedRows.map(row => (
+          <tbody>
 
-            <TableRow
-              key={getRowKey(row)}
-              row={row}
-              columns={columns}
-              selected={
-                selectedRow
-                  ? getRowKey(selectedRow) ===
-                    getRowKey(row)
-                  : false
-              }
-              onClick={() =>
-                onRowClick?.(row)
-              }
-            />
+            {processedRows.map(row => (
 
-          ))}
+              <TableRow
+                key={getRowKey(row)}
+                row={row}
+                columns={columns}
+                selected={
+                  selectedRow
+                    ? getRowKey(selectedRow) ===
+                      getRowKey(row)
+                    : false
+                }
+                onClick={() =>
+                  onRowClick?.(row)
+                }
+              />
 
-        </tbody>
+            ))}
 
-      </table>
+          </tbody>
+
+        </table>
+
+      </div>
 
     </div>
 
