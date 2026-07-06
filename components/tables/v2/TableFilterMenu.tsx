@@ -91,6 +91,7 @@ export function TableFilterMenu({
       style={{
 
         position: "absolute",
+        
 
         top: "100%",
 
@@ -110,7 +111,7 @@ export function TableFilterMenu({
 
         padding: 12,
 
-        zIndex: 100,
+        zIndex: 9999,
 
       }}
 
