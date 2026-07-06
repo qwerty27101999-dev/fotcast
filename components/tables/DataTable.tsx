@@ -14,7 +14,11 @@ export interface DataColumn<T> {
 
   sortable?: boolean;
 
-  render?: (row: T) => ReactNode;
+  filterable?: boolean;
+
+  render?: (row:T)=>ReactNode;
+
+  getValue?: (row:T)=>unknown;
 
 }
 
