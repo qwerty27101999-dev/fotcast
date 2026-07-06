@@ -86,21 +86,70 @@ function applyFilters<T>(
 
   Object.entries(filters).forEach(
     ([field, selected]) => {
-      //
-      // Нет фильтра
-      //
 
-      if (!selected || !selected.length) {
+      //
+      // Нет фильтра по колонке
+      //
+      if (!selected) {
         return;
       }
 
+
+      //
+      // Собираем все возможные значения
+      //
+      const allValues = new Set<string>();
+
+      rows.forEach((row: any) => {
+
+        allValues.add(
+          String(row[field] ?? "")
+        );
+
+      });
+
+
+      //
+      // NONE
+      // ничего не выбрано
+      //
+      if (selected.length === 0) {
+
+        result = [];
+
+        return;
+
+      }
+
+
+      //
+      // ALL
+      // выбраны все значения
+      // фильтр фактически выключен
+      //
+      if (
+        selected.length === allValues.size
+      ) {
+
+        return;
+
+      }
+
+
+      //
+      // PARTIAL
+      // обычная фильтрация
+      //
       result = result.filter((row: any) => {
+
         const value = String(
           row[field] ?? ""
         );
 
         return selected.includes(value);
+
       });
+
     }
   );
 
