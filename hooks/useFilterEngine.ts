@@ -9,32 +9,100 @@ export function useFilterEngine<T>({
   rows,
   columnFilters,
 }: Params<T>) {
+  //
+  // ============================================
+  // APPLY ALL FILTERS
+  // ============================================
+  //
+
   const filteredRows = useMemo(() => {
-    let result = [...rows];
+    return applyFilters(rows, columnFilters);
+  }, [rows, columnFilters]);
 
-    Object.entries(columnFilters).forEach(([field, values]) => {
-      if (!values.length) return;
+  //
+  // ============================================
+  // EXCEL CASCADE VALUES
+  // ============================================
+  //
 
-      result = result.filter((row: any) =>
-        values.includes(String(row[field] ?? ""))
+  function getAvailableValues(field: string): string[] {
+    //
+    // Копируем все фильтры
+    //
+
+    const filtersWithoutCurrent = {
+      ...columnFilters,
+    };
+
+    //
+    // Убираем фильтр текущего столбца
+    //
+
+    delete filtersWithoutCurrent[field];
+
+    //
+    // Применяем остальные фильтры
+    //
+
+    const rowsForColumn = applyFilters(
+      rows,
+      filtersWithoutCurrent
+    );
+
+    //
+    // Собираем уникальные значения
+    //
+
+    const values = new Set<string>();
+
+    rowsForColumn.forEach((row: any) => {
+      values.add(
+        String(row[field] ?? "")
       );
     });
 
-    return result;
-  }, [rows, columnFilters]);
-
-  function getAvailableValues(field: string) {
-    const values = new Set<string>();
-
-    filteredRows.forEach((row: any) => {
-      values.add(String(row[field] ?? ""));
-    });
-
-    return [...values].sort();
+    return [...values].sort((a, b) =>
+      a.localeCompare(b)
+    );
   }
 
   return {
     filteredRows,
     getAvailableValues,
   };
+}
+
+//
+// ============================================
+// SHARED FILTER FUNCTION
+// ============================================
+//
+
+function applyFilters<T>(
+  rows: T[],
+  filters: Record<string, string[]>
+): T[] {
+  let result = [...rows];
+
+  Object.entries(filters).forEach(
+    ([field, selected]) => {
+      //
+      // Нет фильтра
+      //
+
+      if (!selected || !selected.length) {
+        return;
+      }
+
+      result = result.filter((row: any) => {
+        const value = String(
+          row[field] ?? ""
+        );
+
+        return selected.includes(value);
+      });
+    }
+  );
+
+  return result;
 }

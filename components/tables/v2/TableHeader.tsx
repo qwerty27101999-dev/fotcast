@@ -27,24 +27,18 @@ interface Props<T> {
 
   ) => void;
 
+  getAvailableValues: (field: string) => string[];
 }
 
 export function TableHeader<T>({
-
   columns,
-
   rows,
-
   sortField,
-
   sortDirection,
-
   onSort,
-
   columnFilters,
-
   onFilterChange,
-
+  getAvailableValues,
 }: Props<T>) {
 
   const [openedFilter, setOpenedFilter] =
@@ -59,21 +53,9 @@ export function TableHeader<T>({
 
         {columns.map(column => {
 
-          const unique = new Set<string>();
-
-          rows.forEach(row => {
-
-            const value = column.getValue
-
-              ? column.getValue(row)
-
-              : (row as any)[column.id];
-
-            unique.add(String(value ?? ""));
-
-          });
-
-          const values = [...unique].sort();
+          const values = getAvailableValues(
+  String(column.id)
+);
 
           const selected =
 

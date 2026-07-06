@@ -202,6 +202,7 @@ const processedRows =
           onSort={handleSort}
           columnFilters={columnFilters}
           onFilterChange={handleFilterChange}
+          getAvailableValues={getAvailableValues}
         />
 
         <tbody>
