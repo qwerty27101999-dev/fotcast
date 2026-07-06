@@ -12,6 +12,11 @@ interface Props {
 
   onClose: () => void;
 
+  position?: {
+    top: number;
+    left: number;
+  };
+
 }
 
 export function TableFilterMenu({
@@ -24,19 +29,25 @@ export function TableFilterMenu({
 
   onClose,
 
+  position,
+
 }: Props) {
 
-  const [search, setSearch] = useState("");
+
+  const [search, setSearch] =
+    useState("");
+
 
   const [localSelection, setLocalSelection] =
-
     useState<string[]>(selected);
+
 
   useEffect(() => {
 
     setLocalSelection(selected);
 
   }, [selected]);
+
 
   const filteredValues = useMemo(() => {
 
@@ -46,43 +57,54 @@ export function TableFilterMenu({
 
     }
 
-    const q = search.toLowerCase();
+    const q =
+      search.toLowerCase();
 
-    return values.filter(v =>
 
-      v.toLowerCase().includes(q)
-
+    return values.filter(value =>
+      value.toLowerCase().includes(q)
     );
+
 
   }, [values, search]);
 
-  function toggle(value: string) {
 
-    if (localSelection.includes(value)) {
+  function toggle(value:string) {
 
-      setLocalSelection(
+    setLocalSelection(prev => {
 
-        localSelection.filter(
+      if (prev.includes(value)) {
 
-          v => v !== value
+        return prev.filter(
+          item => item !== value
+        );
 
-        )
+      }
 
-      );
 
-    } else {
+      return [
+        ...prev,
+        value
+      ];
 
-      setLocalSelection([
-
-        ...localSelection,
-
-        value,
-
-      ]);
-
-    }
+    });
 
   }
+
+
+  function selectAll() {
+
+    setLocalSelection(values);
+
+  }
+
+
+  function clearAll() {
+
+    setLocalSelection([]);
+
+  }
+
 
   return (
 
@@ -90,64 +112,89 @@ export function TableFilterMenu({
 
       style={{
 
-        position: "absolute",
-        
+        position: "fixed",
 
-        top: "100%",
+        top: position?.top ?? 0,
 
-        left: 0,
+        left: position?.left ?? 0,
 
         width: 260,
 
-        background: "#fff",
+        background:"#ffffff",
 
-        border: "1px solid #d1d5db",
+        border:"1px solid #d1d5db",
 
-        borderRadius: 10,
+        borderRadius:10,
 
         boxShadow:
-
           "0 8px 24px rgba(0,0,0,.15)",
 
-        padding: 12,
+        padding:12,
 
-        zIndex: 9999,
+        zIndex:9999,
 
       }}
 
     >
+
 
       <input
 
         value={search}
 
         onChange={e =>
-
           setSearch(e.target.value)
-
         }
 
         placeholder="Search..."
 
         style={{
 
-          width: "100%",
+          width:"100%",
 
-          padding: 8,
+          padding:8,
 
-          marginBottom: 10,
+          marginBottom:10,
 
         }}
 
       />
 
+
+      <div
+        style={{
+          display:"flex",
+          gap:8,
+          marginBottom:10,
+        }}
+      >
+
+        <button
+          className="btn"
+          onClick={selectAll}
+        >
+          All
+        </button>
+
+
+        <button
+          className="btn"
+          onClick={clearAll}
+        >
+          None
+        </button>
+
+
+      </div>
+
+
       <div
 
         style={{
 
-          maxHeight: 260,
+          maxHeight:260,
 
-          overflowY: "auto",
+          overflowY:"auto",
 
         }}
 
@@ -161,11 +208,11 @@ export function TableFilterMenu({
 
             style={{
 
-              display: "flex",
+              display:"flex",
 
-              gap: 8,
+              gap:8,
 
-              padding: 4,
+              padding:"4px 0",
 
             }}
 
@@ -176,58 +223,49 @@ export function TableFilterMenu({
               type="checkbox"
 
               checked={
-
-                localSelection.includes(
-
-                  value
-
-                )
-
+                localSelection.includes(value)
               }
 
               onChange={() =>
-
                 toggle(value)
-
               }
 
             />
 
             {value}
 
+
           </label>
 
         ))}
 
+
       </div>
+
 
       <div
 
         style={{
 
-          display: "flex",
+          display:"flex",
 
-          justifyContent: "flex-end",
+          justifyContent:"flex-end",
 
-          gap: 8,
+          gap:8,
 
-          marginTop: 12,
+          marginTop:12,
 
         }}
 
       >
 
         <button
-
           className="btn"
-
           onClick={onClose}
-
         >
-
           Cancel
-
         </button>
+
 
         <button
 
@@ -247,7 +285,9 @@ export function TableFilterMenu({
 
         </button>
 
+
       </div>
+
 
     </div>
 

@@ -140,7 +140,7 @@ export function DataTable<T>({
       <div
   style={{
     overflowX: "auto",
-    overflowY: "visible",
+    overflowY: "auto",
     maxHeight: "72vh",
     position: "relative",
   }}

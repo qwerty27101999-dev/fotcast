@@ -5,6 +5,7 @@ import { useState } from "react";
 import { DataColumn } from "./types";
 import { TableFilterMenu } from "./TableFilterMenu";
 
+
 interface Props<T> {
 
   columns: DataColumn<T>[];
@@ -20,15 +21,16 @@ interface Props<T> {
   columnFilters: Record<string, string[]>;
 
   onFilterChange: (
-
     columnId: string,
-
     values: string[]
-
   ) => void;
 
-  getAvailableValues: (field: string) => string[];
+  getAvailableValues: (
+    field: string
+  ) => string[];
+
 }
+
 
 export function TableHeader<T>({
   columns,
@@ -39,11 +41,21 @@ export function TableHeader<T>({
   columnFilters,
   onFilterChange,
   getAvailableValues,
+
 }: Props<T>) {
 
-  const [openedFilter, setOpenedFilter] =
 
+  const [openedFilter, setOpenedFilter] =
     useState<string | null>(null);
+
+
+  const [filterPosition, setFilterPosition] =
+    useState({
+      top: 0,
+      left: 0,
+    });
+
+
 
   return (
 
@@ -53,19 +65,22 @@ export function TableHeader<T>({
 
         {columns.map(column => {
 
-          const values = getAvailableValues(
-  String(column.id)
-);
+
+          const values =
+            getAvailableValues(
+              String(column.id)
+            );
+
 
           const selected =
-
             columnFilters[String(column.id)] ??
-
             values;
 
-          const filtered =
 
+          const filtered =
             selected.length !== values.length;
+
+
 
           return (
 
@@ -85,32 +100,31 @@ export function TableHeader<T>({
 
             >
 
+
               <div
 
                 style={{
 
-                  display: "flex",
+                  display:"flex",
 
-                  justifyContent: "space-between",
+                  justifyContent:"space-between",
 
-                  alignItems: "center",
+                  alignItems:"center",
 
-                  gap: 6,
+                  gap:6,
 
                 }}
 
               >
+
 
                 <span
 
                   style={{
 
                     cursor:
-
                       column.sortable
-
                         ? "pointer"
-
                         : "default",
 
                   }}
@@ -118,8 +132,9 @@ export function TableHeader<T>({
                   onClick={() =>
 
                     column.sortable &&
-
-                    onSort(String(column.id))
+                    onSort(
+                      String(column.id)
+                    )
 
                   }
 
@@ -127,19 +142,27 @@ export function TableHeader<T>({
 
                   {column.title}
 
+
                   {" "}
 
-                  {sortField === String(column.id)
 
-                    ? sortDirection === "asc"
+                  {
+                    sortField === String(column.id)
 
-                      ? "▲"
+                      ? sortDirection === "asc"
 
-                      : "▼"
+                        ? "▲"
 
-                    : ""}
+                        : "▼"
+
+                      : ""
+
+                  }
+
 
                 </span>
+
+
 
                 {column.filterable && (
 
@@ -147,27 +170,52 @@ export function TableHeader<T>({
 
                     type="button"
 
-                    onClick={() =>
+                    onClick={(e) => {
 
-                      setOpenedFilter(prev =>
 
-                        prev === String(column.id)
+                      const id =
+                        String(column.id);
 
-                          ? null
 
-                          : String(column.id)
+                      if (openedFilter === id) {
 
-                      )
+                        setOpenedFilter(null);
 
-                    }
+                        return;
+
+                      }
+
+
+                      const rect =
+                        e.currentTarget
+                          .getBoundingClientRect();
+
+
+                      setFilterPosition({
+
+                        top:
+                          rect.bottom + 6,
+
+                        left:
+                          rect.left,
+
+                      });
+
+
+                      setOpenedFilter(id);
+
+
+                    }}
+
 
                     style={{
 
-                      border: "none",
 
-                      background: "transparent",
+                      border:"none",
 
-                      cursor: "pointer",
+                      background:"transparent",
+
+                      cursor:"pointer",
 
                       color:
 
@@ -177,17 +225,22 @@ export function TableHeader<T>({
 
                           : "#6b7280",
 
+
                     }}
 
                   >
 
                     ⏷
 
+
                   </button>
 
                 )}
 
+
               </div>
+
+
 
               {openedFilter === String(column.id) && (
 
@@ -196,6 +249,8 @@ export function TableHeader<T>({
                   values={values}
 
                   selected={selected}
+
+                  position={filterPosition}
 
                   onApply={(next) =>
 
@@ -219,13 +274,17 @@ export function TableHeader<T>({
 
               )}
 
+
             </th>
 
           );
 
+
         })}
 
+
       </tr>
+
 
     </thead>
 
