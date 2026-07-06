@@ -2,7 +2,8 @@
 
 import { Employee } from "@/lib/types";
 
-import { DataTable, DataColumn } from "@/components/tables/DataTable";
+import { DataTable } from "@/components/tables/v2/DataTable";
+import { DataColumn } from "@/components/tables/v2/types";
 
 import { formatMoney } from "@/utils/formatMoney";
 import { formatDate } from "@/utils/formatDate";
