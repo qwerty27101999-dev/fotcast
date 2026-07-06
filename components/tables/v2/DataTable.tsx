@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { useTablePipeline, SortState } from "@/hooks/useTablePipeline";
-
+import { useFilterEngine } from "@/hooks/useFilterEngine";
 import { DataColumn } from "./types";
 import { TableHeader } from "./TableHeader";
 import { TableRow } from "./TableRow";
@@ -97,25 +97,43 @@ export function DataTable<T>({
   }
 
   //
-  // ==========================
-  // PIPELINE
-  // ==========================
-  //
+// ==========================
+// FILTER ENGINE
+// ==========================
+//
 
-  const processedRows =
-    useTablePipeline({
+const {
 
-      rows,
+  filteredRows,
 
-      columns,
+  getAvailableValues,
 
-      search: globalSearch,
+} = useFilterEngine({
 
-      sort,
+  rows,
 
-      columnFilters,
+  columnFilters,
 
-    });
+});
+
+//
+// ==========================
+// PIPELINE
+// ==========================
+//
+
+const processedRows =
+  useTablePipeline({
+
+    rows: filteredRows,
+
+    columns,
+
+    search: globalSearch,
+
+    sort,
+
+  });
 
   //
   // ==========================
