@@ -172,7 +172,7 @@ export function DataTable<T>({
 
         <TableHeader
           columns={columns}
-          rows={processedRows}
+          rows={rows}
           sortField={
             sort
               ? String(sort.field)

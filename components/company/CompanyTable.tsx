@@ -27,6 +27,7 @@ export const companyColumns: DataColumn<Employee>[] = [
     title: "Name",
 
     sortable: true,
+    filterable: true,
 
     render: employee => employee.name,
 
@@ -39,6 +40,7 @@ export const companyColumns: DataColumn<Employee>[] = [
     title: "Department",
 
     sortable: true,
+    filterable: true,
 
     render: employee => employee.department,
 
@@ -51,6 +53,7 @@ export const companyColumns: DataColumn<Employee>[] = [
     title: "Hire Date",
 
     sortable: true,
+    filterable: true,
 
     render: employee => formatDate(employee.hire_date),
 
@@ -63,6 +66,7 @@ export const companyColumns: DataColumn<Employee>[] = [
     title: "Termination",
 
     sortable: true,
+    filterable: true,
 
     render: employee => formatDate(employee.termination_date),
 
@@ -75,6 +79,7 @@ export const companyColumns: DataColumn<Employee>[] = [
     title: "Salary",
 
     sortable: true,
+    filterable: true,
 
     align: "right",
 
@@ -89,6 +94,7 @@ export const companyColumns: DataColumn<Employee>[] = [
     title: "Monthly Bonus",
 
     sortable: true,
+    filterable: true,
 
     align: "right",
 
@@ -105,6 +111,7 @@ export const companyColumns: DataColumn<Employee>[] = [
     title: "Quarterly Bonus",
 
     sortable: true,
+    filterable: true,
 
     align: "right",
 
@@ -121,6 +128,7 @@ export const companyColumns: DataColumn<Employee>[] = [
     title: "Annual Bonus",
 
     sortable: true,
+    filterable: true,
 
     align: "right",
 
