@@ -104,7 +104,6 @@ export function TableFilterMenu({
   //
 
   const visibleValues = useMemo(() => {
-    if (!search.trim())
       return values;
 
     const q =
@@ -164,31 +163,10 @@ export function TableFilterMenu({
 
   function apply() {
 
-  let result: string[];
-
-  if (search.trim()) {
-
-    //
-    // При поиске Apply берет
-    // только найденные значения,
-    // которые отмечены галкой
-    //
-
-    result = visibleValues.filter(
+  const result =
+    allValues.filter(
       value => checked[value]
     );
-
-  } else {
-
-    //
-    // Без поиска — обычная логика
-    //
-
-    result = allValues.filter(
-      value => checked[value]
-    );
-
-  }
 
   onApply(result);
 

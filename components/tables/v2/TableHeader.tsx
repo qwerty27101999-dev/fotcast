@@ -141,12 +141,17 @@ export function TableHeader<T>({
                       const rect =
                         e.currentTarget.getBoundingClientRect();
 
-                      setFilterPosition({
-                        top:
-                          rect.bottom +
-                          6,
-                        left: rect.left,
-                      });
+                      const menuWidth = 260;
+
+const left =
+  rect.right + menuWidth > window.innerWidth
+    ? rect.right - menuWidth
+    : rect.left;
+
+setFilterPosition({
+  top: rect.bottom + 6,
+  left,
+});
 
                       setOpenedFilter(
                         id
