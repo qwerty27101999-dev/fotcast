@@ -67,10 +67,20 @@ export function DataTable<T>({
     values: string[]
   ) {
 
-    setColumnFilters(prev => ({
-      ...prev,
-      [columnId]: values,
-    }));
+    setColumnFilters(prev => {
+  const next = { ...prev };
+
+  if (
+    values.length === 0 ||
+    values.length === getAvailableValues(columnId).length
+  ) {
+    delete next[columnId];
+  } else {
+    next[columnId] = values;
+  }
+
+  return next;
+});
 
   }
 
