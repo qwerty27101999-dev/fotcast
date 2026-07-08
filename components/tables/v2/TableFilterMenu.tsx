@@ -131,32 +131,44 @@ export function TableFilterMenu({
   //
 
   function selectAll() {
-    setChecked(prev => {
-      const next = { ...prev };
 
-      visibleValues.forEach(v => {
-        next[v] = true;
-      });
+    setChecked(prev=>{
 
-      return next;
+        const next={...prev};
+
+        allValues.forEach(v=>{
+
+            next[v]=true;
+
+        });
+
+        return next;
+
     });
-  }
+
+}
 
   //
   // NONE (visible only)
   //
 
   function clearAll() {
-    setChecked(prev => {
-      const next = { ...prev };
 
-      visibleValues.forEach(v => {
-        next[v] = false;
-      });
+    setChecked(prev=>{
 
-      return next;
+        const next={...prev};
+
+        allValues.forEach(v=>{
+
+            next[v]=false;
+
+        });
+
+        return next;
+
     });
-  }
+
+}
 
   //
   // APPLY
@@ -192,7 +204,9 @@ export function TableFilterMenu({
 
   onApply(result);
 
-  onClose();
+setSearch("");
+
+onClose();
 
 }
 
