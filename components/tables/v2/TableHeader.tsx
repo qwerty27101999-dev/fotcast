@@ -5,9 +5,7 @@ import { useState } from "react";
 import { DataColumn } from "./types";
 import { TableFilterMenu } from "./TableFilterMenu";
 
-
 interface Props<T> {
-
   columns: DataColumn<T>[];
 
   rows: T[];
@@ -29,8 +27,10 @@ interface Props<T> {
     field: string
   ) => string[];
 
+  getAllValues: (
+    field: string
+  ) => string[];
 }
-
 
 export function TableHeader<T>({
   columns,
@@ -41,13 +41,10 @@ export function TableHeader<T>({
   columnFilters,
   onFilterChange,
   getAvailableValues,
-
+  getAllValues,
 }: Props<T>) {
-
-
   const [openedFilter, setOpenedFilter] =
     useState<string | null>(null);
-
 
   const [filterPosition, setFilterPosition] =
     useState({
@@ -55,239 +52,146 @@ export function TableHeader<T>({
       left: 0,
     });
 
-
-
   return (
-
     <thead>
-
       <tr>
-
         {columns.map(column => {
+          const id = String(column.id);
 
+          //
+          // Все значения столбца
+          //
+
+          const allValues =
+            getAllValues(id);
+
+          //
+          // Доступные после остальных фильтров
+          //
 
           const values =
-            getAvailableValues(
-              String(column.id)
-            );
+            getAvailableValues(id);
 
+          //
+          // Если фильтр выключен —
+          // считаем выбранными все значения
+          //
 
           const selected =
-            columnFilters[String(column.id)] ??
-            values;
-
+            columnFilters[id] ??
+            allValues;
 
           const filtered =
-            selected.length !== values.length;
-
-
+            selected.length !==
+            allValues.length;
 
           return (
-
             <th
-
-              key={String(column.id)}
-
+              key={id}
               style={{
-
                 width: column.width,
-
                 position: "relative",
-
                 whiteSpace: "nowrap",
-
               }}
-
             >
-
-
               <div
-
                 style={{
-
-                  display:"flex",
-
-                  justifyContent:"space-between",
-
-                  alignItems:"center",
-
-                  gap:6,
-
+                  display: "flex",
+                  justifyContent:
+                    "space-between",
+                  alignItems: "center",
+                  gap: 6,
                 }}
-
               >
-
-
                 <span
-
                   style={{
-
                     cursor:
                       column.sortable
                         ? "pointer"
                         : "default",
-
                   }}
-
                   onClick={() =>
-
                     column.sortable &&
-                    onSort(
-                      String(column.id)
-                    )
-
+                    onSort(id)
                   }
-
                 >
-
-                  {column.title}
-
-
-                  {" "}
-
-
-                  {
-                    sortField === String(column.id)
-
-                      ? sortDirection === "asc"
-
-                        ? "▲"
-
-                        : "▼"
-
-                      : ""
-
-                  }
-
-
+                  {column.title}{" "}
+                  {sortField === id
+                    ? sortDirection ===
+                      "asc"
+                      ? "▲"
+                      : "▼"
+                    : ""}
                 </span>
 
-
-
                 {column.filterable && (
-
                   <button
-
                     type="button"
-
-                    onClick={(e) => {
-
-
-                      const id =
-                        String(column.id);
-
-
-                      if (openedFilter === id) {
-
-                        setOpenedFilter(null);
-
+                    onClick={e => {
+                      if (
+                        openedFilter ===
+                        id
+                      ) {
+                        setOpenedFilter(
+                          null
+                        );
                         return;
-
                       }
 
-
                       const rect =
-                        e.currentTarget
-                          .getBoundingClientRect();
-
+                        e.currentTarget.getBoundingClientRect();
 
                       setFilterPosition({
-
                         top:
-                          rect.bottom + 6,
-
-                        left:
-                          rect.left,
-
+                          rect.bottom +
+                          6,
+                        left: rect.left,
                       });
 
-
-                      setOpenedFilter(id);
-
-
+                      setOpenedFilter(
+                        id
+                      );
                     }}
-
-
                     style={{
-
-
-                      border:"none",
-
-                      background:"transparent",
-
-                      cursor:"pointer",
-
-                      color:
-
-                        filtered
-
-                          ? "#2563eb"
-
-                          : "#6b7280",
-
-
+                      border: "none",
+                      background:
+                        "transparent",
+                      cursor: "pointer",
+                      color: filtered
+                        ? "#2563eb"
+                        : "#6b7280",
                     }}
-
                   >
-
                     ⏷
-
-
                   </button>
-
                 )}
-
-
               </div>
 
-
-
-              {openedFilter === String(column.id) && (
-
+              {openedFilter === id && (
                 <TableFilterMenu
-
                   values={values}
-
+                  allValues={allValues}
                   selected={selected}
-
-                  position={filterPosition}
-
-                  onApply={(next) =>
-
+                  position={
+                    filterPosition
+                  }
+                  onApply={next =>
                     onFilterChange(
-
-                      String(column.id),
-
+                      id,
                       next
-
                     )
-
                   }
-
                   onClose={() =>
-
-                    setOpenedFilter(null)
-
+                    setOpenedFilter(
+                      null
+                    )
                   }
-
                 />
-
               )}
-
-
             </th>
-
           );
-
-
         })}
-
-
       </tr>
-
-
     </thead>
-
   );
-
 }

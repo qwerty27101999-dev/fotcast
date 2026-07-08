@@ -1,15 +1,15 @@
 "use client";
 
 import {
-  useMemo,
-  useState,
   useEffect,
+  useMemo,
   useRef,
+  useState,
 } from "react";
 
 interface Props {
-
   values: string[];
+  allValues: string[];
 
   selected: string[];
 
@@ -21,38 +21,59 @@ interface Props {
     top: number;
     left: number;
   };
-
 }
 
 export function TableFilterMenu({
-
   values,
-
+  allValues,
   selected,
-
   onApply,
-
   onClose,
-
   position,
-
 }: Props) {
+  const menuRef =
+    useRef<HTMLDivElement>(null);
+
+  //
+  // Search
+  //
 
   const [search, setSearch] =
     useState("");
 
-  const [localSelection, setLocalSelection] =
-    useState<string[]>(selected);
+  //
+  // checkedMap
+  //
 
-  const menuRef =
-    useRef<HTMLDivElement>(null);
+  const [checked, setChecked] =
+    useState<Record<string, boolean>>({});
+
+  //
+  // Sync from parent
+  //
 
   useEffect(() => {
+    const map: Record<
+      string,
+      boolean
+    > = {};
 
-    function handleClickOutside(
+    allValues.forEach(value => {
+      map[value] =
+        selected.includes(value);
+    });
+
+    setChecked(map);
+  }, [selected, allValues]);
+
+  //
+  // Click outside
+  //
+
+  useEffect(() => {
+    function outside(
       event: MouseEvent
     ) {
-
       if (
         menuRef.current &&
         !menuRef.current.contains(
@@ -61,113 +82,95 @@ export function TableFilterMenu({
       ) {
         onClose();
       }
-
     }
 
     document.addEventListener(
       "mousedown",
-      handleClickOutside
+      outside
     );
 
-    return () => {
-
+    return () =>
       document.removeEventListener(
         "mousedown",
-        handleClickOutside
+        outside
       );
-
-    };
-
   }, [onClose]);
 
-  useEffect(() => {
+  //
+  // Search
+  //
 
-    setLocalSelection(selected);
-
-  }, [selected]);
-
-  const filteredValues = useMemo(() => {
-
-    if (!search.trim()) {
-
+  const visibleValues = useMemo(() => {
+    if (!search.trim())
       return values;
-
-    }
 
     const q =
       search.toLowerCase();
 
-    return values.filter(value =>
-      value
-        .toLowerCase()
-        .includes(q)
+    return values.filter(v =>
+      v.toLowerCase().includes(q)
     );
+  }, [search, values]);
 
-  }, [values, search]);
+  //
+  // Toggle
+  //
 
   function toggle(value: string) {
-
-    setLocalSelection(prev => {
-
-      if (prev.includes(value)) {
-
-        return prev.filter(
-          item => item !== value
-        );
-
-      }
-
-      return [
-        ...prev,
-        value,
-      ];
-
-    });
-
+    setChecked(prev => ({
+      ...prev,
+      [value]: !prev[value],
+    }));
   }
 
   //
-  // Выбрать все ВИДИМЫЕ
+  // ALL (visible only)
   //
 
   function selectAll() {
+    setChecked(prev => {
+      const next = { ...prev };
 
-    setLocalSelection(prev => {
+      visibleValues.forEach(v => {
+        next[v] = true;
+      });
 
-      const next =
-        new Set(prev);
-
-      filteredValues.forEach(v =>
-        next.add(v)
-      );
-
-      return [...next];
-
+      return next;
     });
-
   }
 
   //
-  // Снять все ВИДИМЫЕ
+  // NONE (visible only)
   //
 
   function clearAll() {
+    setChecked(prev => {
+      const next = { ...prev };
 
-    setLocalSelection(prev =>
+      visibleValues.forEach(v => {
+        next[v] = false;
+      });
 
-      prev.filter(
-        value =>
-          !filteredValues.includes(
-            value
-          )
-      )
+      return next;
+    });
+  }
 
-    );
+  //
+  // APPLY
+  //
 
+  function apply() {
+    const result =
+      allValues.filter(
+        value => checked[value]
+      );
+
+    onApply(result);
+
+    onClose();
   }
 
   return (
-
     <div
       ref={menuRef}
       style={{
@@ -175,7 +178,7 @@ export function TableFilterMenu({
         top: position?.top ?? 0,
         left: position?.left ?? 0,
         width: 260,
-        background: "#ffffff",
+        background: "#fff",
         border:
           "1px solid #d1d5db",
         borderRadius: 10,
@@ -185,7 +188,6 @@ export function TableFilterMenu({
         zIndex: 9999,
       }}
     >
-
       <input
         value={search}
         onChange={e =>
@@ -208,7 +210,6 @@ export function TableFilterMenu({
           marginBottom: 10,
         }}
       >
-
         <button
           className="btn"
           onClick={selectAll}
@@ -222,7 +223,6 @@ export function TableFilterMenu({
         >
           None
         </button>
-
       </div>
 
       <div
@@ -231,9 +231,7 @@ export function TableFilterMenu({
           overflowY: "auto",
         }}
       >
-
-        {filteredValues.map(value => (
-
+        {visibleValues.map(value => (
           <label
             key={value}
             style={{
@@ -242,23 +240,20 @@ export function TableFilterMenu({
               padding: "4px 0",
             }}
           >
-
             <input
               type="checkbox"
-              checked={localSelection.includes(
-                value
-              )}
+              checked={
+                checked[value] ??
+                false
+              }
               onChange={() =>
                 toggle(value)
               }
             />
 
             {value}
-
           </label>
-
         ))}
-
       </div>
 
       <div
@@ -270,7 +265,6 @@ export function TableFilterMenu({
           marginTop: 12,
         }}
       >
-
         <button
           className="btn"
           onClick={onClose}
@@ -280,23 +274,11 @@ export function TableFilterMenu({
 
         <button
           className="btn"
-          onClick={() => {
-
-            onApply(
-              [...localSelection].sort()
-            );
-
-            onClose();
-
-          }}
+          onClick={apply}
         >
           Apply
         </button>
-
       </div>
-
     </div>
-
   );
-
 }

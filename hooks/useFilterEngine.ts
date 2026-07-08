@@ -10,9 +10,9 @@ export function useFilterEngine<T>({
   columnFilters,
 }: Params<T>) {
   //
-  // ============================================
-  // APPLY ALL FILTERS
-  // ============================================
+  // ==========================
+  // FILTERED ROWS
+  // ==========================
   //
 
   const filteredRows = useMemo(() => {
@@ -20,38 +20,23 @@ export function useFilterEngine<T>({
   }, [rows, columnFilters]);
 
   //
-  // ============================================
-  // EXCEL CASCADE VALUES
-  // ============================================
+  // ==========================
+  // AVAILABLE VALUES
+  // (Excel cascade)
+  // ==========================
   //
 
   function getAvailableValues(field: string): string[] {
-    //
-    // Копируем все фильтры
-    //
-
-    const filtersWithoutCurrent = {
+    const filters = {
       ...columnFilters,
     };
 
-    //
-    // Убираем фильтр текущего столбца
-    //
-
-    delete filtersWithoutCurrent[field];
-
-    //
-    // Применяем остальные фильтры
-    //
+    delete filters[field];
 
     const rowsForColumn = applyFilters(
       rows,
-      filtersWithoutCurrent
+      filters
     );
-
-    //
-    // Собираем уникальные значения
-    //
 
     const values = new Set<string>();
 
@@ -66,16 +51,38 @@ export function useFilterEngine<T>({
     );
   }
 
+  //
+  // ==========================
+  // ALL VALUES
+  // (нужно новому FilterMenu)
+  // ==========================
+  //
+
+  function getAllValues(field: string): string[] {
+    const values = new Set<string>();
+
+    rows.forEach((row: any) => {
+      values.add(
+        String(row[field] ?? "")
+      );
+    });
+
+    return [...values].sort((a, b) =>
+      a.localeCompare(b)
+    );
+  }
+
   return {
     filteredRows,
     getAvailableValues,
+    getAllValues,
   };
 }
 
 //
-// ============================================
-// SHARED FILTER FUNCTION
-// ============================================
+// ==========================
+// SHARED FILTER ENGINE
+// ==========================
 //
 
 function applyFilters<T>(
@@ -86,70 +93,34 @@ function applyFilters<T>(
 
   Object.entries(filters).forEach(
     ([field, selected]) => {
+      //
+      // Нет фильтра
+      //
 
-      //
-      // Нет фильтра по колонке
-      //
       if (!selected) {
         return;
       }
 
-
-      //
-      // Собираем все возможные значения
-      //
-      const allValues = new Set<string>();
-
-      rows.forEach((row: any) => {
-
-        allValues.add(
-          String(row[field] ?? "")
-        );
-
-      });
-
-
       //
       // NONE
-      // ничего не выбрано
       //
+
       if (selected.length === 0) {
-
         result = [];
-
         return;
-
       }
-
-
-      //
-      // ALL
-      // выбраны все значения
-      // фильтр фактически выключен
-      //
-      if (
-        selected.length === allValues.size
-      ) {
-
-        return;
-
-      }
-
 
       //
       // PARTIAL
-      // обычная фильтрация
       //
-      result = result.filter((row: any) => {
 
+      result = result.filter((row: any) => {
         const value = String(
           row[field] ?? ""
         );
 
         return selected.includes(value);
-
       });
-
     }
   );
 

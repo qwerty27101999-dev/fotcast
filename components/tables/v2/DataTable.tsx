@@ -50,9 +50,14 @@ export function DataTable<T>({
   //
 
   const {
-    filteredRows,
-    getAvailableValues,
-  } = useFilterEngine({
+
+  filteredRows,
+
+  getAvailableValues,
+
+  getAllValues,
+
+} = useFilterEngine({
     rows,
     columnFilters,
   });
@@ -227,6 +232,7 @@ export function DataTable<T>({
             getAvailableValues={
               getAvailableValues
             }
+            getAllValues={getAllValues}
           />
 
           <tbody>
