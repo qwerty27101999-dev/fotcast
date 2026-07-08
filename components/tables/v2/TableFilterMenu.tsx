@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useMemo,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
 
 interface Props {
 
@@ -41,6 +46,30 @@ export function TableFilterMenu({
   const [localSelection, setLocalSelection] =
     useState<string[]>(selected);
 
+  const menuRef = useRef<HTMLDivElement>(null);
+
+useEffect(() => {
+  function handleClickOutside(event: MouseEvent) {
+    if (
+      menuRef.current &&
+      !menuRef.current.contains(event.target as Node)
+    ) {
+      onClose();
+    }
+  }
+
+  document.addEventListener(
+    "mousedown",
+    handleClickOutside
+  );
+
+  return () => {
+    document.removeEventListener(
+      "mousedown",
+      handleClickOutside
+    );
+  };
+}, [onClose]);
 
   useEffect(() => {
 
@@ -109,8 +138,8 @@ export function TableFilterMenu({
   return (
 
     <div
-
-      style={{
+  ref={menuRef}
+  style={{
 
         position: "fixed",
 
