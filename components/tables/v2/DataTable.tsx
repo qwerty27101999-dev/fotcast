@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 
-import { useTablePipeline, SortState } from "@/hooks/useTablePipeline";
+import {
+  useTablePipeline,
+  SortState,
+} from "@/hooks/useTablePipeline";
+
 import { useFilterEngine } from "@/hooks/useFilterEngine";
 
 import { DataColumn } from "./types";
@@ -25,14 +29,39 @@ export function DataTable<T>({
   onRowClick,
 }: Props<T>) {
 
-  const [globalSearch, setGlobalSearch] =
-    useState("");
+  //
+  // ==========================
+  // TABLE STATE
+  // ==========================
+  //
+
+  const [globalSearch, setGlobalSearch] = useState("");
 
   const [sort, setSort] =
     useState<SortState<T> | null>(null);
 
   const [columnFilters, setColumnFilters] =
     useState<Record<string, string[]>>({});
+
+  //
+  // ==========================
+  // FILTER ENGINE
+  // ==========================
+  //
+
+  const {
+    filteredRows,
+    getAvailableValues,
+  } = useFilterEngine({
+    rows,
+    columnFilters,
+  });
+
+  //
+  // ==========================
+  // SORT
+  // ==========================
+  //
 
   function handleSort(field: string) {
 
@@ -48,19 +77,22 @@ export function DataTable<T>({
       }
 
       return {
-
         field,
-
         direction:
           prev.direction === "asc"
             ? "desc"
             : "asc",
-
       };
 
     });
 
   }
+
+  //
+  // ==========================
+  // COLUMN FILTERS
+  // ==========================
+  //
 
   function handleFilterChange(
     columnId: string,
@@ -68,35 +100,32 @@ export function DataTable<T>({
   ) {
 
     setColumnFilters(prev => {
-  const next = { ...prev };
 
-  if (
-    values.length === 0 ||
-    values.length === getAvailableValues(columnId).length
-  ) {
-    delete next[columnId];
-  } else {
-    next[columnId] = values;
+      const next = { ...prev };
+
+      const totalValues =
+        getAvailableValues(columnId).length;
+
+      if (
+        values.length === 0 ||
+        values.length === totalValues
+      ) {
+        delete next[columnId];
+      } else {
+        next[columnId] = values;
+      }
+
+      return next;
+
+    });
+
   }
 
-  return next;
-});
-
-  }
-
-  const {
-
-    filteredRows,
-
-    getAvailableValues,
-
-  } = useFilterEngine({
-
-    rows,
-
-    columnFilters,
-
-  });
+  //
+  // ==========================
+  // PIPELINE
+  // ==========================
+  //
 
   const processedRows =
     useTablePipeline({
@@ -111,6 +140,12 @@ export function DataTable<T>({
 
     });
 
+  //
+  // ==========================
+  // RENDER
+  // ==========================
+  //
+
   return (
 
     <div
@@ -121,8 +156,12 @@ export function DataTable<T>({
       }}
     >
 
+      {/* Toolbar */}
+
       <div
         style={{
+          display: "flex",
+          gap: 10,
           padding: 10,
           borderBottom: "1px solid #1f1f1f",
           background: "#0f0f0f",
@@ -136,7 +175,7 @@ export function DataTable<T>({
           }
           placeholder="Search..."
           style={{
-            width: "100%",
+            flex: 1,
             padding: "8px 10px",
             borderRadius: 8,
             border: "1px solid #2a2a2a",
@@ -145,16 +184,23 @@ export function DataTable<T>({
           }}
         />
 
+        <button
+          className="btn"
+          onClick={() => setColumnFilters({})}
+        >
+          Clear filters
+        </button>
+
       </div>
 
       <div
-  style={{
-    overflowX: "auto",
-    overflowY: "auto",
-    maxHeight: "72vh",
-    position: "relative",
-  }}
->
+        style={{
+          overflowX: "auto",
+          overflowY: "auto",
+          maxHeight: "72vh",
+          position: "relative",
+        }}
+      >
 
         <table
           className="table"
