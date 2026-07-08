@@ -46,9 +46,7 @@ export function useFilterEngine<T>({
       );
     });
 
-    return [...values].sort((a, b) =>
-      a.localeCompare(b)
-    );
+    return [...values].sort(smartSort);
   }
 
   //
@@ -67,9 +65,7 @@ export function useFilterEngine<T>({
       );
     });
 
-    return [...values].sort((a, b) =>
-      a.localeCompare(b)
-    );
+    return [...values].sort(smartSort);
   }
 
   return {
@@ -84,7 +80,52 @@ export function useFilterEngine<T>({
 // SHARED FILTER ENGINE
 // ==========================
 //
+function smartSort(a: string, b: string) {
 
+  //
+  // Number
+  //
+
+  const numA = Number(a);
+  const numB = Number(b);
+
+  if (
+    !Number.isNaN(numA) &&
+    !Number.isNaN(numB) &&
+    a.trim() !== "" &&
+    b.trim() !== ""
+  ) {
+    return numA - numB;
+  }
+
+  //
+  // Date
+  //
+
+  const dateA = Date.parse(a);
+  const dateB = Date.parse(b);
+
+  if (
+    !Number.isNaN(dateA) &&
+    !Number.isNaN(dateB)
+  ) {
+    return dateA - dateB;
+  }
+
+  //
+  // Text
+  //
+
+  return a.localeCompare(
+    b,
+    "ru",
+    {
+      numeric: true,
+      sensitivity: "base",
+    }
+  );
+
+}
 function applyFilters<T>(
   rows: T[],
   filters: Record<string, string[]>
