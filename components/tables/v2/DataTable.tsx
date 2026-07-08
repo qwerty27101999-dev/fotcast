@@ -111,14 +111,11 @@ export function DataTable<T>({
       const totalValues =
     getAllValues(columnId).length;
 
-      if (
-        values.length === 0 ||
-        values.length === totalValues
-      ) {
-        delete next[columnId];
-      } else {
-        next[columnId] = values;
-      }
+      if (values.length === totalValues) {
+    delete next[columnId];
+} else {
+    next[columnId] = values;
+}
 
       return next;
 
