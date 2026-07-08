@@ -16,7 +16,7 @@ export interface DataColumn<T> {
   filterable?: boolean;
 
   render?: (row: T) => ReactNode;
-
+  formatFilterValue?: (value: unknown) => string;
   getValue?: (row: T) => unknown;
 }
 
