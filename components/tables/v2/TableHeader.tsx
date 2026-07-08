@@ -76,7 +76,7 @@ export function TableHeader<T>({
           // Если фильтр выключен —
           // считаем выбранными все значения
           //
-
+          
           const selected =
             columnFilters[id] ??
             allValues;
@@ -169,24 +169,25 @@ export function TableHeader<T>({
 
               {openedFilter === id && (
                 <TableFilterMenu
-                  values={values}
-                  allValues={allValues}
-                  selected={selected}
-                  position={
-                    filterPosition
-                  }
-                  onApply={next =>
-                    onFilterChange(
-                      id,
-                      next
-                    )
-                  }
-                  onClose={() =>
-                    setOpenedFilter(
-                      null
-                    )
-                  }
-                />
+  values={values}
+  allValues={allValues}
+  selected={selected}
+
+  formatValue={
+    column.formatFilterValue ??
+    ((value) => String(value))
+  }
+
+  position={filterPosition}
+
+  onApply={next =>
+    onFilterChange(id, next)
+  }
+
+  onClose={() =>
+    setOpenedFilter(null)
+  }
+/>
               )}
             </th>
           );

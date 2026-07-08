@@ -56,7 +56,8 @@ export const companyColumns: DataColumn<Employee>[] = [
     filterable: true,
 
     render: employee => formatDate(employee.hire_date),
-
+    formatFilterValue: value =>
+  formatDate(value),
   },
 
   {
@@ -69,7 +70,8 @@ export const companyColumns: DataColumn<Employee>[] = [
     filterable: true,
 
     render: employee => formatDate(employee.termination_date),
-
+    formatFilterValue: value =>
+  formatDate(value),
   },
 
   {
@@ -84,7 +86,8 @@ export const companyColumns: DataColumn<Employee>[] = [
     align: "right",
 
     render: employee => formatMoney(employee.salary),
-
+    formatFilterValue: value =>
+    formatMoney(Number(value)),
   },
 
   {
@@ -101,7 +104,8 @@ export const companyColumns: DataColumn<Employee>[] = [
     render: employee =>
 
       formatMoney(employee.monthly_bonus),
-
+    formatFilterValue: value =>
+    formatMoney(Number(value)),
   },
 
   {
@@ -118,7 +122,8 @@ export const companyColumns: DataColumn<Employee>[] = [
     render: employee =>
 
       formatMoney(employee.quarterly_bonus),
-
+    formatFilterValue: value =>
+    formatMoney(Number(value)),
   },
 
   {
@@ -135,7 +140,8 @@ export const companyColumns: DataColumn<Employee>[] = [
     render: employee =>
 
       formatMoney(employee.annual_bonus),
-
+      formatFilterValue: value =>
+    formatMoney(Number(value)),
   },
 
 ];

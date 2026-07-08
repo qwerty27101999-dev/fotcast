@@ -16,14 +16,28 @@ export interface DataColumn<T> {
   filterable?: boolean;
 
   render?: (row: T) => ReactNode;
-  formatFilterValue?: (value: unknown) => string;
+
   getValue?: (row: T) => unknown;
+
+  // NEW
+  // Красивое отображение значения в фильтре
+  formatFilterValue?: (
+    value: unknown
+  ) => string;
+}
+
+export interface ColumnFilter {
+  values: Set<string>;
 }
 
 export interface SortState {
-
   field: string;
 
   direction: "asc" | "desc";
+}
 
+export interface FilterMenuState {
+  open: boolean;
+
+  columnId: string | null;
 }

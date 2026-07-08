@@ -13,6 +13,8 @@ interface Props {
 
   selected: string[];
 
+  formatValue: (value: unknown) => string;
+
   onApply: (values: string[]) => void;
 
   onClose: () => void;
@@ -27,6 +29,7 @@ export function TableFilterMenu({
   values,
   allValues,
   selected,
+  formatValue,
   onApply,
   onClose,
   position,
@@ -255,28 +258,29 @@ export function TableFilterMenu({
         }}
       >
         {visibleValues.map(value => (
-          <label
-            key={value}
-            style={{
-              display: "flex",
-              gap: 8,
-              padding: "4px 0",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={
-                checked[value] ??
-                false
-              }
-              onChange={() =>
-                toggle(value)
-              }
-            />
+  <label
+    key={value}
+    style={{
+      display: "flex",
+      gap: 8,
+      padding: "4px 0",
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={
+        checked[value] ??
+        false
+      }
+      onChange={() =>
+        toggle(value)
+      }
+    />
 
-            {value}
-          </label>
-        ))}
+    {formatValue(value)}
+
+  </label>
+))}
       </div>
 
       <div
