@@ -38,45 +38,53 @@ export function TableFilterMenu({
 
 }: Props) {
 
-
   const [search, setSearch] =
     useState("");
-
 
   const [localSelection, setLocalSelection] =
     useState<string[]>(selected);
 
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRef =
+    useRef<HTMLDivElement>(null);
 
-useEffect(() => {
-  function handleClickOutside(event: MouseEvent) {
-    if (
-      menuRef.current &&
-      !menuRef.current.contains(event.target as Node)
+  useEffect(() => {
+
+    function handleClickOutside(
+      event: MouseEvent
     ) {
-      onClose();
+
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(
+          event.target as Node
+        )
+      ) {
+        onClose();
+      }
+
     }
-  }
 
-  document.addEventListener(
-    "mousedown",
-    handleClickOutside
-  );
-
-  return () => {
-    document.removeEventListener(
+    document.addEventListener(
       "mousedown",
       handleClickOutside
     );
-  };
-}, [onClose]);
+
+    return () => {
+
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
+
+    };
+
+  }, [onClose]);
 
   useEffect(() => {
 
     setLocalSelection(selected);
 
   }, [selected]);
-
 
   const filteredValues = useMemo(() => {
 
@@ -89,16 +97,15 @@ useEffect(() => {
     const q =
       search.toLowerCase();
 
-
     return values.filter(value =>
-      value.toLowerCase().includes(q)
+      value
+        .toLowerCase()
+        .includes(q)
     );
-
 
   }, [values, search]);
 
-
-  function toggle(value:string) {
+  function toggle(value: string) {
 
     setLocalSelection(prev => {
 
@@ -110,91 +117,95 @@ useEffect(() => {
 
       }
 
-
       return [
         ...prev,
-        value
+        value,
       ];
 
     });
 
   }
 
+  //
+  // Выбрать все ВИДИМЫЕ
+  //
 
   function selectAll() {
 
-    setLocalSelection(values);
+    setLocalSelection(prev => {
+
+      const next =
+        new Set(prev);
+
+      filteredValues.forEach(v =>
+        next.add(v)
+      );
+
+      return [...next];
+
+    });
 
   }
 
+  //
+  // Снять все ВИДИМЫЕ
+  //
 
   function clearAll() {
 
-    setLocalSelection([]);
+    setLocalSelection(prev =>
+
+      prev.filter(
+        value =>
+          !filteredValues.includes(
+            value
+          )
+      )
+
+    );
 
   }
-
 
   return (
 
     <div
-  ref={menuRef}
-  style={{
-
+      ref={menuRef}
+      style={{
         position: "fixed",
-
         top: position?.top ?? 0,
-
         left: position?.left ?? 0,
-
         width: 260,
-
-        background:"#ffffff",
-
-        border:"1px solid #d1d5db",
-
-        borderRadius:10,
-
+        background: "#ffffff",
+        border:
+          "1px solid #d1d5db",
+        borderRadius: 10,
         boxShadow:
           "0 8px 24px rgba(0,0,0,.15)",
-
-        padding:12,
-
-        zIndex:9999,
-
+        padding: 12,
+        zIndex: 9999,
       }}
-
     >
 
-
       <input
-
         value={search}
-
         onChange={e =>
-          setSearch(e.target.value)
+          setSearch(
+            e.target.value
+          )
         }
-
         placeholder="Search..."
-
         style={{
-
-          width:"100%",
-
-          padding:8,
-
-          marginBottom:10,
-
+          width: "100%",
+          padding: 8,
+          marginBottom: 10,
         }}
-
       />
-
 
       <div
         style={{
-          display:"flex",
-          gap:8,
-          marginBottom:10,
+          display: "flex",
+          gap: 8,
+          marginBottom: 10,
         }}
       >
 
@@ -205,7 +216,6 @@ useEffect(() => {
           All
         </button>
 
-
         <button
           className="btn"
           onClick={clearAll}
@@ -213,79 +223,52 @@ useEffect(() => {
           None
         </button>
 
-
       </div>
 
-
       <div
-
         style={{
-
-          maxHeight:260,
-
-          overflowY:"auto",
-
+          maxHeight: 260,
+          overflowY: "auto",
         }}
-
       >
 
         {filteredValues.map(value => (
 
           <label
-
             key={value}
-
             style={{
-
-              display:"flex",
-
-              gap:8,
-
-              padding:"4px 0",
-
+              display: "flex",
+              gap: 8,
+              padding: "4px 0",
             }}
-
           >
 
             <input
-
               type="checkbox"
-
-              checked={
-                localSelection.includes(value)
-              }
-
+              checked={localSelection.includes(
+                value
+              )}
               onChange={() =>
                 toggle(value)
               }
-
             />
 
             {value}
-
 
           </label>
 
         ))}
 
-
       </div>
 
-
       <div
-
         style={{
-
-          display:"flex",
-
-          justifyContent:"flex-end",
-
-          gap:8,
-
-          marginTop:12,
-
+          display: "flex",
+          justifyContent:
+            "flex-end",
+          gap: 8,
+          marginTop: 12,
         }}
-
       >
 
         <button
@@ -295,28 +278,22 @@ useEffect(() => {
           Cancel
         </button>
 
-
         <button
-
           className="btn"
-
           onClick={() => {
 
-            onApply(localSelection);
+            onApply(
+              [...localSelection].sort()
+            );
 
             onClose();
 
           }}
-
         >
-
           Apply
-
         </button>
 
-
       </div>
-
 
     </div>
 
