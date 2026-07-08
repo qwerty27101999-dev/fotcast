@@ -28,7 +28,17 @@ export function parseExcelDate(
 
   // DD.MM.YYYY
   if (typeof value === "string") {
+    // Excel serial в строковом виде
+if (/^\d+$/.test(value)) {
 
+  const EXCEL_EPOCH = 25569;
+  const MS_PER_DAY = 86400000;
+
+  return new Date(
+    (Number(value) - EXCEL_EPOCH) * MS_PER_DAY
+  );
+
+}
     const parts = value.split(".");
 
     if (parts.length === 3) {
