@@ -160,15 +160,38 @@ export function TableFilterMenu({
   //
 
   function apply() {
-    const result =
-      allValues.filter(
-        value => checked[value]
-      );
 
-    onApply(result);
+  let result: string[];
 
-    onClose();
+  if (search.trim()) {
+
+    //
+    // При поиске Apply берет
+    // только найденные значения,
+    // которые отмечены галкой
+    //
+
+    result = visibleValues.filter(
+      value => checked[value]
+    );
+
+  } else {
+
+    //
+    // Без поиска — обычная логика
+    //
+
+    result = allValues.filter(
+      value => checked[value]
+    );
+
   }
+
+  onApply(result);
+
+  onClose();
+
+}
 
   return (
     <div
