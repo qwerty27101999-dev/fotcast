@@ -56,21 +56,8 @@ export const companyColumns: DataColumn<Employee>[] = [
     filterable: true,
 
     render: employee => formatDate(employee.hire_date),
-    formatFilterValue: value => {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  if (typeof value === "number") {
-    return formatDate(
-      new Date((value - 25569) * 86400 * 1000)
-    );
-  }
-
-  return formatDate(
-    new Date(String(value))
-  );
-},
+    formatFilterValue: value =>
+  formatDate(value),
   },
 
   {
@@ -83,21 +70,8 @@ export const companyColumns: DataColumn<Employee>[] = [
     filterable: true,
 
     render: employee => formatDate(employee.termination_date),
-    formatFilterValue: value => {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  if (typeof value === "number") {
-    return formatDate(
-      new Date((value - 25569) * 86400 * 1000)
-    );
-  }
-
-  return formatDate(
-    new Date(String(value))
-  );
-},
+    formatFilterValue: value =>
+  formatDate(value),
   },
 
   {
