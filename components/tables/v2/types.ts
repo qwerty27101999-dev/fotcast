@@ -20,22 +20,10 @@ export interface DataColumn<T> {
   getValue?: (row: T) => unknown;
 }
 
-export interface ColumnFilter {
-  values: Set<string>;
-}
-
 export interface SortState {
 
   field: string;
 
   direction: "asc" | "desc";
-
-}
-
-export interface FilterMenuState {
-
-  open: boolean;
-
-  columnId: string | null;
 
 }

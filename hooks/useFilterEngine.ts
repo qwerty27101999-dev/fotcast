@@ -26,7 +26,7 @@ export function useFilterEngine<T>({
   // ==========================
   //
 
-  function getAvailableValues(field: string): string[] {
+  function getVisibleValues(field: string): string[] {
     const filters = {
       ...columnFilters,
     };
@@ -74,7 +74,7 @@ export function useFilterEngine<T>({
 
   return {
     filteredRows,
-    getAvailableValues,
+    getAvailableValues: getVisibleValues,
     getAllValues,
   };
 }

@@ -109,7 +109,7 @@ export function DataTable<T>({
       const next = { ...prev };
 
       const totalValues =
-        getAvailableValues(columnId).length;
+    getAllValues(columnId).length;
 
       if (
         values.length === 0 ||
