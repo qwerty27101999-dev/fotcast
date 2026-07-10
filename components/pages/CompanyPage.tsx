@@ -26,14 +26,9 @@ interface Props {
 
 export function CompanyPage({
   company,
+  employees,
+  setEmployees,
 }: Props) {
-  //
-  // Теперь CompanyPage владеет данными
-  //
-
-  const [employees, setEmployees] = useState(
-    company.employees
-  );
 
   const [
     selectedEmployee,
@@ -45,18 +40,18 @@ export function CompanyPage({
   //
 
   function handleSaveEmployee(
-    updated: Employee
-  ) {
-    setEmployees(prev =>
-      prev.map(employee =>
-        employee.name === updated.name
-          ? updated
-          : employee
-      )
-    );
+  updated: Employee
+) {
+  setEmployees(prev =>
+    prev.map(employee =>
+      employee.id === updated.id
+        ? updated
+        : employee
+    )
+  );
 
-    setSelectedEmployee(updated);
-  }
+  setSelectedEmployee(updated);
+}
 
   return (
     <>
