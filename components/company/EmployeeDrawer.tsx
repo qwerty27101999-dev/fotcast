@@ -145,6 +145,9 @@ return (
 </div>
 
       </div>
+<SectionTitle>
+  👤 General
+</SectionTitle>      
 <Info
   label="Name"
   value={draft.name}
@@ -170,7 +173,11 @@ return (
 
       <Info
   label="Hire Date"
-  value={String(draft.hire_date ?? "")}
+  value={
+    editing
+      ? String(draft.hire_date ?? "")
+      : formatDate(draft.hire_date)
+  }
   editing={editing}
   type="date"
   onChange={(value) =>
@@ -183,7 +190,11 @@ return (
 
       <Info
   label="Termination"
-  value={String(draft.termination_date ?? "")}
+  value={
+  editing
+    ? String(draft.termination_date ?? "")
+    : formatDate(draft.termination_date)
+}
   editing={editing}
   type="date"
   onChange={(value) =>
@@ -193,10 +204,16 @@ return (
     })
   }
 />
-
+<SectionTitle>
+  💰 Compensation
+</SectionTitle>
       <Info
   label="Salary"
-  value={String(draft.salary)}
+  value={
+    editing
+      ? String(draft.salary)
+      : formatMoney(Number(draft.salary))
+  }
   editing={editing}
   type="number"
   onChange={(value) =>
@@ -209,7 +226,11 @@ return (
 
       <Info
   label="Monthly Bonus"
-  value={String(draft.monthly_bonus ?? 0)}
+  value={
+    editing
+      ? String(draft.monthly_bonus ?? 0)
+      : formatMoney(Number(draft.monthly_bonus ?? 0))
+  }
   editing={editing}
   type="number"
   onChange={(value) =>
@@ -222,7 +243,11 @@ return (
 
       <Info
   label="Quarterly Bonus"
-  value={String(draft.quarterly_bonus ?? 0)}
+  value={
+    editing
+      ? String(draft.quarterly_bonus ?? 0)
+      : formatMoney(Number(draft.quarterly_bonus ?? 0))
+  }
   editing={editing}
   type="number"
   onChange={(value) =>
@@ -235,7 +260,11 @@ return (
 
       <Info
   label="Annual Bonus"
-  value={String(draft.annual_bonus ?? 0)}
+  value={
+    editing
+      ? String(draft.annual_bonus ?? 0)
+      : formatMoney(Number(draft.annual_bonus ?? 0))
+  }
   editing={editing}
   type="number"
   onChange={(value) =>
@@ -245,13 +274,45 @@ return (
     })
   }
 />
+<SectionTitle>
+  📈 Future revisions
+</SectionTitle>
 
+<div
+  style={{
+    color: "#9ca3af",
+    fontSize: 14,
+    padding: "8px 0",
+  }}
+>
+  No revisions yet
+</div>
     </div>
 
   );
 
 }
-
+function SectionTitle({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        marginTop: 28,
+        marginBottom: 18,
+        paddingBottom: 8,
+        borderBottom: "2px solid #e5e7eb",
+        fontSize: 15,
+        fontWeight: 700,
+        color: "#374151",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 interface InfoProps {
   label: string;
 
