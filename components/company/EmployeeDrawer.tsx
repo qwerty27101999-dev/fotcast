@@ -11,6 +11,8 @@ interface Props {
 
   onClose: () => void;
 
+  onSave: (employee: Employee) => void;
+
 }
 
 export function EmployeeDrawer({
@@ -18,6 +20,8 @@ export function EmployeeDrawer({
   employee,
 
   onClose,
+
+  onSave,
 
 }: Props) {
 
@@ -92,9 +96,12 @@ const [draft, setDraft] = useState({
       <button
         className="btn"
         onClick={() => {
-          // позже здесь будет сохранение
-          setEditing(false);
-        }}
+
+  onSave(draft);
+
+  setEditing(false);
+
+}}
       >
         Save
       </button>
