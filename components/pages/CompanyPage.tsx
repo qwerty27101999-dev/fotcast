@@ -35,31 +35,41 @@ export function CompanyPage({
   // Сохранение сотрудника
   //
 
-  function handleSaveEmployee(
-  updated: Employee
-) {
-  if (drawerMode === "create") {
+  function handleSaveEmployee(updated: Employee) {
 
-    setEmployees(prev => [
-      ...prev,
-      updated,
-    ]);
+  setEmployees(prev => {
 
-  } else {
+    const exists = prev.some(
+      employee => employee.id === updated.id
+    );
 
-    setEmployees(prev =>
-      prev.map(employee =>
+    if (exists) {
+      return prev.map(employee =>
         employee.id === updated.id
           ? updated
           : employee
-      )
-    );
+      );
+    }
+
+    return [...prev, updated];
+
+  });
+
+  setSelectedEmployee(updated);
+
+  //
+  // если создавали нового сотрудника —
+  // закрываем Drawer
+  //
+
+  if (drawerMode === "create") {
+
+    setSelectedEmployee(null);
+
+    setDrawerMode("edit");
 
   }
 
-  setDrawerMode("edit");
-
-setSelectedEmployee(null);
 }
 function handleDeleteEmployee(id: string) {
 
