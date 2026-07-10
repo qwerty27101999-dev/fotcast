@@ -3,17 +3,14 @@
 import { useState } from "react";
 
 import { CompanyDataset } from "@/lib/company/companyTypes";
+import { emptyEmployee } from "@/lib/company/emptyEmployee";
 import { Employee } from "@/lib/types";
 
-import {
-  companyColumns,
-  CompanyTable,
-} from "@/components/company/CompanyTable";
+import { CompanyTable } from "@/components/company/CompanyTable";
 import { CompanyHeader } from "@/components/company/CompanyHeader";
 import { EmployeeDrawer } from "@/components/company/EmployeeDrawer";
 
 interface Props {
-
   company: CompanyDataset;
 
   employees: Employee[];
@@ -21,7 +18,6 @@ interface Props {
   setEmployees: React.Dispatch<
     React.SetStateAction<Employee[]>
   >;
-
 }
 
 export function CompanyPage({
@@ -29,44 +25,89 @@ export function CompanyPage({
   employees,
   setEmployees,
 }: Props) {
+  const [selectedEmployee, setSelectedEmployee] =
+    useState<Employee | null>(null);
 
-  const [
-    selectedEmployee,
-    setSelectedEmployee,
-  ] = useState<Employee | null>(null);
+  const [drawerMode, setDrawerMode] =
+    useState<"edit" | "create">("edit");
 
   //
-  // Сохранение изменений сотрудника
+  // Сохранение сотрудника
   //
 
   function handleSaveEmployee(
   updated: Employee
 ) {
-  setEmployees(prev =>
-    prev.map(employee =>
-      employee.id === updated.id
-        ? updated
-        : employee
-    )
-  );
+  if (drawerMode === "create") {
 
-  setSelectedEmployee(updated);
+    setEmployees(prev => [
+      ...prev,
+      updated,
+    ]);
+
+  } else {
+
+    setEmployees(prev =>
+      prev.map(employee =>
+        employee.id === updated.id
+          ? updated
+          : employee
+      )
+    );
+
+  }
+
+  setDrawerMode("edit");
+
+setSelectedEmployee(null);
 }
 
   return (
     <>
-      <h2>Company</h2>
+      <div
+        style={{
+          display: "flex",
+          justifyContent:
+            "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
+        <h2>Company</h2>
+
+        <button
+          className="btn"
+          onClick={() => {
+            setDrawerMode("create");
+
+            setSelectedEmployee({
+              ...emptyEmployee,
+              id: crypto.randomUUID(),
+            });
+          }}
+        >
+          + Employee
+        </button>
+      </div>
 
       <CompanyHeader company={company} />
 
       <CompanyTable
         employees={employees}
-        selectedEmployee={selectedEmployee}
-        onSelect={setSelectedEmployee}
+        selectedEmployee={
+          selectedEmployee
+        }
+        onSelect={employee => {
+          setDrawerMode("edit");
+          setSelectedEmployee(
+            employee
+          );
+        }}
       />
 
       <EmployeeDrawer
         employee={selectedEmployee}
+        mode={drawerMode}
         onClose={() =>
           setSelectedEmployee(null)
         }

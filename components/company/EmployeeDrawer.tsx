@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Employee } from "@/lib/types";
 
@@ -6,13 +6,13 @@ import { formatMoney } from "@/utils/formatMoney";
 import { formatDate } from "@/utils/formatDate";
 
 interface Props {
-
   employee: Employee | null;
+
+  mode: "edit" | "create";
 
   onClose: () => void;
 
   onSave: (employee: Employee) => void;
-
 }
 
 export function EmployeeDrawer({
@@ -25,14 +25,24 @@ export function EmployeeDrawer({
 
 }: Props) {
 
-  if (!employee) {
-    return null;
-  }
-const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(false);
 
-const [draft, setDraft] = useState({
-  ...employee,
-});
+const [draft, setDraft] = useState<Employee | null>(null);
+
+useEffect(() => {
+  if (employee) {
+    setDraft({ ...employee });
+  }
+}, [employee]);
+
+if (!employee || !draft) {
+  return null;
+}
+useEffect(() => {
+  if (employee) {
+    setDraft({ ...employee });
+  }
+}, [employee]);
   return (
 
     <div
@@ -127,7 +137,17 @@ const [draft, setDraft] = useState({
 </div>
 
       </div>
-
+<Info
+  label="Name"
+  value={draft.name}
+  editing={editing}
+  onChange={(value) =>
+    setDraft({
+      ...draft,
+      name: value,
+    })
+  }
+/>
       <Info
   label="Department"
   value={draft.department}
@@ -141,34 +161,82 @@ const [draft, setDraft] = useState({
 />
 
       <Info
-        label="Hire Date"
-        value={formatDate(employee.hire_date)}
-      />
+  label="Hire Date"
+  value={String(draft.hire_date ?? "")}
+  editing={editing}
+  type="date"
+  onChange={(value) =>
+    setDraft({
+      ...draft,
+      hire_date: value,
+    })
+  }
+/>
 
       <Info
-        label="Termination"
-        value={formatDate(employee.termination_date)}
-      />
+  label="Termination"
+  value={String(draft.termination_date ?? "")}
+  editing={editing}
+  type="date"
+  onChange={(value) =>
+    setDraft({
+      ...draft,
+      termination_date: value,
+    })
+  }
+/>
 
       <Info
-        label="Salary"
-        value={`${formatMoney(employee.salary)} ₽`}
-      />
+  label="Salary"
+  value={String(draft.salary)}
+  editing={editing}
+  type="number"
+  onChange={(value) =>
+    setDraft({
+      ...draft,
+      salary: Number(value),
+    })
+  }
+/>
 
       <Info
-        label="Monthly Bonus"
-        value={`${formatMoney(employee.monthly_bonus)} ₽`}
-      />
+  label="Monthly Bonus"
+  value={String(draft.monthly_bonus ?? 0)}
+  editing={editing}
+  type="number"
+  onChange={(value) =>
+    setDraft({
+      ...draft,
+      monthly_bonus: Number(value),
+    })
+  }
+/>
 
       <Info
-        label="Quarterly Bonus"
-        value={`${formatMoney(employee.quarterly_bonus)} ₽`}
-      />
+  label="Quarterly Bonus"
+  value={String(draft.quarterly_bonus ?? 0)}
+  editing={editing}
+  type="number"
+  onChange={(value) =>
+    setDraft({
+      ...draft,
+      quarterly_bonus: Number(value),
+    })
+  }
+/>
 
       <Info
-        label="Annual Bonus"
-        value={`${formatMoney(employee.annual_bonus)} ₽`}
-      />
+  label="Annual Bonus"
+  value={String(draft.annual_bonus ?? 0)}
+  editing={editing}
+  type="number"
+  onChange={(value) =>
+    setDraft({
+      ...draft,
+      annual_bonus: Number(value),
+    })
+  }
+/>
 
     </div>
 
