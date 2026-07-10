@@ -122,9 +122,16 @@ const [draft, setDraft] = useState({
       </div>
 
       <Info
-        label="Department"
-        value={employee.department}
-      />
+  label="Department"
+  value={draft.department}
+  editing={editing}
+  onChange={(value) =>
+    setDraft({
+      ...draft,
+      department: value,
+    })
+  }
+/>
 
       <Info
         label="Hire Date"
@@ -162,22 +169,23 @@ const [draft, setDraft] = useState({
 
 }
 
-function Info({
-
-  label,
-
-  value,
-
-}: {
-
+interface InfoProps {
   label: string;
 
   value: string;
 
-}) {
+  editing?: boolean;
 
+  onChange?: (value: string) => void;
+}
+
+function Info({
+  label,
+  value,
+  editing = false,
+  onChange,
+}: InfoProps) {
   return (
-
     <div
       style={{
         marginBottom: 20,
@@ -185,7 +193,6 @@ function Info({
         borderBottom: "1px solid #ececec",
       }}
     >
-
       <div
         style={{
           fontSize: 12,
@@ -195,25 +202,34 @@ function Info({
           letterSpacing: ".05em",
         }}
       >
-
         {label}
-
       </div>
 
-      <div
-        style={{
-          fontSize: 16,
-          fontWeight: 600,
-          color: "#111827",
-        }}
-      >
-
-        {value}
-
-      </div>
-
+      {editing ? (
+        <input
+          value={value}
+          onChange={(e) =>
+            onChange?.(e.target.value)
+          }
+          style={{
+            width: "100%",
+            padding: "8px 10px",
+            borderRadius: 6,
+            border: "1px solid #d1d5db",
+            fontSize: 15,
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            fontSize: 16,
+            fontWeight: 600,
+            color: "#111827",
+          }}
+        >
+          {value}
+        </div>
+      )}
     </div>
-
   );
-
 }
