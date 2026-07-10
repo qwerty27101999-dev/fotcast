@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import { formatInputDate } from "@/utils/formatInputDate";
 import { Employee } from "@/lib/types";
 
 import { formatMoney } from "@/utils/formatMoney";
@@ -36,10 +36,14 @@ const [editing, setEditing] = useState(false);
 const [draft, setDraft] = useState<Employee | null>(null);
 
 useEffect(() => {
-  if (employee) {
-    setDraft({ ...employee });
-  }
-}, [employee]);
+
+  if (!employee) return;
+
+  setDraft({ ...employee });
+
+  setEditing(mode === "create");
+
+}, [employee, mode]);
 
 if (!employee || !draft) {
   return null;
@@ -189,11 +193,11 @@ return (
   }
 />
 
-      <Info
+<Info
   label="Hire Date"
   value={
     editing
-      ? String(draft.hire_date ?? "")
+      ? formatInputDate(draft.hire_date)
       : formatDate(draft.hire_date)
   }
   editing={editing}
@@ -206,13 +210,13 @@ return (
   }
 />
 
-      <Info
+<Info
   label="Termination"
   value={
-  editing
-    ? String(draft.termination_date ?? "")
-    : formatDate(draft.termination_date)
-}
+    editing
+      ? formatInputDate(draft.termination_date)
+      : formatDate(draft.termination_date)
+  }
   editing={editing}
   type="date"
   onChange={(value) =>
