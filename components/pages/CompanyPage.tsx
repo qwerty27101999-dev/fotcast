@@ -13,7 +13,13 @@ import { CompanyHeader } from "@/components/company/CompanyHeader";
 import { EmployeeDrawer } from "@/components/company/EmployeeDrawer";
 
 interface Props {
+
   company: CompanyDataset;
+
+  onEmployeesChange: (
+    employees: Employee[]
+  ) => void;
+
 }
 
 export function CompanyPage({

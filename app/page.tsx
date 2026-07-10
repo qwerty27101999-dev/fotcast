@@ -95,7 +95,13 @@ export default function Page() {
       year
     );
   };
+const handleEmployeesChange = (
+  employees: Employee[]
+) => {
 
+  setData(employees);
+
+};
   return (
     <div className="app-layout">
 
@@ -148,8 +154,11 @@ export default function Page() {
 
         {page === "company" && (
           <CompanyPage
-            company={company}
-          />
+  company={company}
+  onEmployeesChange={
+    handleEmployeesChange
+  }
+/>
         )}
 
         {page === "export" && (
