@@ -177,6 +177,8 @@ interface InfoProps {
   editing?: boolean;
 
   onChange?: (value: string) => void;
+
+  type?: "text" | "number" | "date";
 }
 
 function Info({
@@ -184,6 +186,7 @@ function Info({
   value,
   editing = false,
   onChange,
+  type = "text",
 }: InfoProps) {
   return (
     <div
@@ -207,18 +210,25 @@ function Info({
 
       {editing ? (
         <input
-          value={value}
-          onChange={(e) =>
-            onChange?.(e.target.value)
-          }
-          style={{
-            width: "100%",
-            padding: "8px 10px",
-            borderRadius: 6,
-            border: "1px solid #d1d5db",
-            fontSize: 15,
-          }}
-        />
+  type={
+    type === "number"
+      ? "number"
+      : type === "date"
+      ? "date"
+      : "text"
+  }
+  value={value}
+  onChange={(e) =>
+    onChange?.(e.target.value)
+  }
+  style={{
+    width: "100%",
+    padding: "8px 10px",
+    borderRadius: 6,
+    border: "1px solid #d1d5db",
+    fontSize: 15,
+  }}
+/>
       ) : (
         <div
           style={{
