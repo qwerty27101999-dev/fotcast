@@ -19,13 +19,15 @@ export function EmployeeDrawer({
 
   employee,
 
+  mode,
+
   onClose,
 
   onSave,
 
 }: Props) {
 
-  const [editing, setEditing] = useState(false);
+const [editing, setEditing] = useState(false);
 
 const [draft, setDraft] = useState<Employee | null>(null);
 
@@ -38,12 +40,7 @@ useEffect(() => {
 if (!employee || !draft) {
   return null;
 }
-useEffect(() => {
-  if (employee) {
-    setDraft({ ...employee });
-  }
-}, [employee]);
-  return (
+return (
 
     <div
       style={{
@@ -84,7 +81,18 @@ useEffect(() => {
       color: "#111827",
     }}
   >
-    {editing ? "Editing employee" : employee.name}
+    <h2
+  style={{
+    margin: 0,
+    color: "#111827",
+  }}
+>
+  {mode === "create"
+    ? "New employee"
+    : editing
+    ? "Editing employee"
+    : employee.name}
+</h2>
   </h2>
 </div>
 
