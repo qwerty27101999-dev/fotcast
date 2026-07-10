@@ -16,9 +16,11 @@ interface Props {
 
   company: CompanyDataset;
 
-  onEmployeesChange: (
-    employees: Employee[]
-  ) => void;
+  employees: Employee[];
+
+  setEmployees: React.Dispatch<
+    React.SetStateAction<Employee[]>
+  >;
 
 }
 

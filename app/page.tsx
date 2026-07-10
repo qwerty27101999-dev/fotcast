@@ -154,10 +154,9 @@ const handleEmployeesChange = (
 
         {page === "company" && (
           <CompanyPage
-  company={company}
-  onEmployeesChange={
-    handleEmployeesChange
-  }
+    company={company}
+    employees={data}
+    setEmployees={setData}
 />
         )}
 
