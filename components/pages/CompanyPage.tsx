@@ -61,7 +61,25 @@ export function CompanyPage({
 
 setSelectedEmployee(null);
 }
+function handleDeleteEmployee(id: string) {
 
+  if (
+    !window.confirm(
+      "Delete this employee?"
+    )
+  ) {
+    return;
+  }
+
+  setEmployees(prev =>
+    prev.filter(
+      employee => employee.id !== id
+    )
+  );
+
+  setSelectedEmployee(null);
+
+}
   return (
     <>
       <div
@@ -106,13 +124,20 @@ setSelectedEmployee(null);
       />
 
       <EmployeeDrawer
-        employee={selectedEmployee}
-        mode={drawerMode}
-        onClose={() =>
-          setSelectedEmployee(null)
-        }
-        onSave={handleSaveEmployee}
-      />
+
+  employee={selectedEmployee}
+
+  mode={drawerMode}
+
+  onClose={() =>
+    setSelectedEmployee(null)
+  }
+
+  onSave={handleSaveEmployee}
+
+  onDelete={handleDeleteEmployee}
+
+/>
     </>
   );
 }

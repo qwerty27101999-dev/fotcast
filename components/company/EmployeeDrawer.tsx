@@ -13,6 +13,8 @@ interface Props {
   onClose: () => void;
 
   onSave: (employee: Employee) => void;
+
+  onDelete: (id: string) => void;
 }
 
 export function EmployeeDrawer({
@@ -24,6 +26,8 @@ export function EmployeeDrawer({
   onClose,
 
   onSave,
+
+  onDelete,
 
 }: Props) {
 
@@ -102,24 +106,38 @@ return (
     gap: 8,
   }}
 >
-  {!editing ? (
-    <button
-      className="btn"
-      onClick={() => setEditing(true)}
-    >
-      Edit
-    </button>
-  ) : (
+  {mode === "edit" && !editing && (
+    <>
+      <button
+        className="btn"
+        onClick={() => setEditing(true)}
+      >
+        Edit
+      </button>
+
+      <button
+        className="btn"
+        style={{
+          background: "#ef4444",
+          color: "white",
+        }}
+        onClick={() =>
+          onDelete(employee.id)
+        }
+      >
+        Delete
+      </button>
+    </>
+  )}
+
+  {editing && (
     <>
       <button
         className="btn"
         onClick={() => {
-
-  onSave(draft);
-
-  setEditing(false);
-
-}}
+          onSave(draft);
+          setEditing(false);
+        }}
       >
         Save
       </button>
