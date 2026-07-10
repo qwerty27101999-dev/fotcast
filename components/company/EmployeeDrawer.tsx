@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { Employee } from "@/lib/types";
 
 import { formatMoney } from "@/utils/formatMoney";
@@ -22,7 +24,11 @@ export function EmployeeDrawer({
   if (!employee) {
     return null;
   }
+const [editing, setEditing] = useState(false);
 
+const [draft, setDraft] = useState({
+  ...employee,
+});
   return (
 
     <div
@@ -51,23 +57,67 @@ export function EmployeeDrawer({
         }}
       >
 
-        <h2
-          style={{
-            margin: 0,
-            color: "#111827",
-          }}
-        >
+        <div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  }}
+>
+  <h2
+    style={{
+      margin: 0,
+      color: "#111827",
+    }}
+  >
+    {editing ? "Editing employee" : employee.name}
+  </h2>
+</div>
 
-          {employee.name}
+<div
+  style={{
+    display: "flex",
+    gap: 8,
+  }}
+>
+  {!editing ? (
+    <button
+      className="btn"
+      onClick={() => setEditing(true)}
+    >
+      Edit
+    </button>
+  ) : (
+    <>
+      <button
+        className="btn"
+        onClick={() => {
+          // позже здесь будет сохранение
+          setEditing(false);
+        }}
+      >
+        Save
+      </button>
 
-        </h2>
+      <button
+        className="btn"
+        onClick={() => {
+          setDraft({ ...employee });
+          setEditing(false);
+        }}
+      >
+        Cancel
+      </button>
+    </>
+  )}
 
-        <button
-          className="btn"
-          onClick={onClose}
-        >
-          ✕
-        </button>
+  <button
+    className="btn"
+    onClick={onClose}
+  >
+    ✕
+  </button>
+</div>
 
       </div>
 
