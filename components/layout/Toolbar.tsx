@@ -27,11 +27,9 @@ export function Toolbar({
   setYear,
   onExport,
 }: ToolbarProps) {
-
   const handleFile = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-
     const file = e.target.files?.[0];
 
     if (!file) return;
@@ -41,9 +39,7 @@ export function Toolbar({
     reader.onload = (
       event: ProgressEvent<FileReader>
     ) => {
-
       try {
-
         const result = event.target?.result;
 
         if (!(result instanceof ArrayBuffer)) {
@@ -62,31 +58,37 @@ export function Toolbar({
           ];
 
         const json =
-          XLSX.utils.sheet_to_json<Employee>(
-            sheet
-          );
+          XLSX.utils.sheet_to_json<
+            Omit<Employee, "id">
+          >(sheet);
 
-        setData(json);
+        const employees: Employee[] =
+          json.map((employee, index) => ({
+            ...employee,
+
+            id:
+              typeof crypto !== "undefined" &&
+              crypto.randomUUID
+                ? crypto.randomUUID()
+                : `emp_${Date.now()}_${index}`,
+          }));
+
+        setData(employees);
 
         setFileName(file.name);
 
       } catch (error) {
-
         console.error(
           "Excel parse error:",
           error
         );
-
       }
-
     };
 
     reader.readAsArrayBuffer(file);
-
   };
 
   return (
-
     <div className="toolbar">
 
       <div
@@ -96,9 +98,7 @@ export function Toolbar({
           alignItems: "center",
         }}
       >
-
         <label className="btn btn-primary">
-
           📂 Upload Excel
 
           <input
@@ -106,44 +106,33 @@ export function Toolbar({
             hidden
             onChange={handleFile}
           />
-
         </label>
 
         <button
           className="btn"
           onClick={onExport}
         >
-
           📤 Export
-
         </button>
 
         <select
           value={year}
           onChange={(e) =>
-            setYear(
-              Number(e.target.value)
-            )
+            setYear(Number(e.target.value))
           }
         >
-
           {Array.from(
             { length: 3 },
             (_, i) =>
               new Date().getFullYear() + i
           ).map((y) => (
-
             <option
               key={y}
               value={y}
             >
-
               {y}
-
             </option>
-
           ))}
-
         </select>
 
       </div>
@@ -155,17 +144,11 @@ export function Toolbar({
           opacity: 0.9,
         }}
       >
-
         <button className="btn btn-ghost">
-
           ⚙️ Settings
-
         </button>
-
       </div>
 
     </div>
-
   );
-
 }

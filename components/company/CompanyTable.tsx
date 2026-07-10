@@ -168,7 +168,7 @@ export function CompanyTable({
 
       onRowClick={onSelect}
 
-      getRowKey={(employee) => employee.name}
+      getRowKey={(employee) => employee.id}
 
     />
 

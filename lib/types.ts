@@ -1,18 +1,16 @@
 export interface Employee {
-  name: string;
+  id: string;
 
+  name: string;
   department: string;
 
   hire_date: unknown;
-
   termination_date: unknown;
 
   salary: number | string;
 
   monthly_bonus?: number | string;
-
   quarterly_bonus?: number | string;
-
   annual_bonus?: number | string;
 }
 
